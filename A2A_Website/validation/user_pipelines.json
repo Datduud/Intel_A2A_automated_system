@@ -1,0 +1,15 @@
+{
+  "China": [
+    "china_step1_load_and_clean",
+    "china_step2_unique_hawb",
+    "china_step3_wd_tagging",
+    "china_step4_fg_merge",
+    "china_step5_remarks",
+    "china_step6_pbi_merge",
+    "china_step7_kpi",
+    "china_step8_save"
+  ],
+  "none": [
+    "china_step1_load_and_clean"
+  ]
+}

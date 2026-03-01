@@ -1,0 +1,27 @@
+{
+  "step": "remarks_update",
+  "conditions": {
+    "rules": [
+      {
+        "target_value": "WD",
+        "conditions": [
+          {
+            "column": "WD",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      },
+        {
+        "target_value": "FG",
+        "conditions": [
+          {
+            "column": "FG",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      }
+    ]
+  }
+}

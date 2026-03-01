@@ -1,0 +1,47 @@
+{
+  "id"   : "pbi_multi_merge",
+  "label": "PBI Multi Merge (NFG・FG・WD 등)",
+  "rule_mode": false,        
+  "inputs": [
+
+    {
+      "type" : "group_list",
+      "name" : "sources",
+      "label": "Add PBI Sheet Source(s)",
+      "inputs": [
+        { "type": "text",   "name": "alias",      "label": "Alias (NFG / FG / WD …)",
+          "placeholder": "e.g., NFG" },
+
+        { "type": "text",   "name": "sheet",      "label": "Sheet Name",
+          "placeholder": "e.g., IntelOpsReportMainALL" },
+
+        { "type": "text", "name": "left_key",   "label": "Left Key (Raw-data)"},           
+
+        { "type": "text",   "name": "right_key",  "label": "Right Key (PBI Sheet)",
+          "placeholder": "e.g., NFG_List[HAWB/BOL]" },
+
+        { "type": "text_list", "name": "cols",    "label": "Columns to Keep",
+          "placeholder": "e.g., NFG_List[HAWB/BOL], NFG_List[ForwarderID]" },
+
+        { "type": "text",   "name": "filter_col", "label": "Filter Column (opt)",
+          "placeholder": "e.g., Invoice Number" },
+
+        { "type": "select", "name": "filter_op",  "label": "Filter Operator (opt)",
+          "options": ["startswith","contains","equals"] },
+
+        { "type": "text",   "name": "filter_val", "label": "Filter Value (opt)",
+          "placeholder": "190" }
+      ]
+    },
+
+    {
+      "type": "group_list",
+      "name": "rename_map",
+      "label": "Rename Columns (opt)",
+      "inputs": [
+        { "type": "text", "name": "old", "label": "Original Column" },
+        { "type": "text", "name": "new", "label": "New Column" }
+      ]
+    }
+  ]
+}

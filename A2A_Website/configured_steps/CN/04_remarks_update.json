@@ -1,0 +1,84 @@
+{
+  "step": "remarks_update",
+  "conditions": {
+    "rules": [
+      {
+        "target_value": "FG",
+        "conditions": [
+          {
+            "column": "FG",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      },
+      {
+        "target_value": "WD",
+        "conditions": [
+          {
+            "column": "WD",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      },
+      {
+        "target_value": "Internal Trucking",
+        "conditions": [
+          {
+            "column": "Port of Loading",
+            "operator": "in",
+            "values": [
+              "SHA",
+              "PVG",
+              "CTU",
+              "CGO",
+              "SZX",
+              "PEK",
+              "BJS",
+              "CKG"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "WD",
+        "conditions": [
+          {
+            "column": "Item Desc",
+            "operator": "in",
+            "values": [
+              "DIE",
+              "HWS CARRIER"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "Supplier Paid",
+        "conditions": [
+          {
+            "column": "Remarks",
+            "operator": "is_blank",
+            "values": []
+          },
+          {
+            "column": "Inco Term",
+            "operator": "not_in",
+            "values": [
+              "FCA",
+              "EXW"
+            ]
+          },
+          {
+            "column": "Consignor Name",
+            "operator": "not_contains",
+            "values": [
+              "INTEL"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A2A Step Selection</title>
+  <style>
+    :root {
+      --dhl-yellow: #FFCC00;
+      --dhl-red: #D40511;
+      --dhl-dark: #333;
+      --btn-h: 36px;        /* 높이 */
+      --btn-px: 12px;       /* 좌우 패딩 */
+      --btn-minw: 120px;    /* 최소 너비 (텍스트 길이가 달라도 체감 크기 통일) */
+      --btn-fz: 0.95rem;    /* 폰트 크기 */
+      --ctrl-h: 36px;   /* 한 줄 컨트롤(인풋/버튼) 높이 */
+      --ctrl-minw: 120px; /* 버튼 최소 너비 */
+    }
+    /* 같은 줄에 인풋+버튼이 같이 있을 때 쓸 공용 행 */
+.hstack{
+  display:flex;
+  align-items:stretch;   /* 자식들이 행 높이에 맞춰 늘어남 */
+  gap:6px;
+}
+
+/* hstack 내부 컨트롤은 모두 같은 높이 */
+.hstack > input[type="text"],
+.hstack > input[type="number"],
+.hstack > select{
+  height: var(--ctrl-h);
+  padding: 0 10px;           /* 높이 강제 시 내부 패딩은 좌우만 */
+  box-sizing: border-box;
+}
+
+.hstack > .btn,
+.hstack > button{
+  height: var(--ctrl-h);
+  min-width: var(--ctrl-minw);
+  line-height: 1;            /* 세로 정렬 깨짐 방지 */
+}
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: var(--dhl-yellow);
+      font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* DHL Navigation */
+    nav {
+      background: var(--dhl-red);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 30px;
+      height: 60px;
+      font-weight: bold;
+      font-size: 1.1em;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px 0 rgba(50,0,0,0.07);
+    }
+    nav .logo {
+      font-size: 1.3em;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: var(--dhl-yellow);
+      margin-right: 30px;
+      text-transform: uppercase;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-right: 18px;
+      transition: color 0.15s;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+    nav a:hover, nav a:focus {
+      color: var(--dhl-yellow);
+      background: rgba(255,255,255,0.10);
+    }
+    /* Main layout */
+    .container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 42px 8px 32px 8px;
+      min-height: 0;
+    }
+    /* Card styling */
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 32px 0 rgba(50,0,0,0.09);
+      padding: 40px 32px 32px 32px;
+      min-width: 330px;
+      max-width: 440px;
+      width: 100%;
+      margin-top: 16px;
+    }
+    h2 {
+      color: var(--dhl-red);
+      font-size: 1.4em;
+      font-weight: 800;
+      margin-top: 0;
+      margin-bottom: 28px;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    label {
+      font-weight: 600;
+      color: var(--dhl-dark);
+      margin-top: 16px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    select,
+    input[type="text"],
+    input[type="file"] {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1.5px solid #ececec;
+      border-radius: 7px;
+      background: #f7f7f7;
+      font-size: 1em;
+      margin-top: 3px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      transition: border 0.15s;
+    }
+    input[type="file"] {
+      padding: 6px 2px;
+      background: #fcfcfc;
+    }
+    input[type="text"]:focus,
+    select:focus,
+    input[type="file"]:focus {
+      border: 1.5px solid var(--dhl-red);
+      outline: none;
+    }
+    button {
+      display: block;
+      width: 100%;
+      background: var(--dhl-red);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.07em;
+      border: none;
+      border-radius: 7px;
+      padding: 12px 0;
+      margin-top: 10px;
+      transition: background 0.18s, color 0.18s;
+      cursor: pointer;
+      box-shadow: 0 2px 8px 0 rgba(212,5,17,0.10);
+      letter-spacing: 0.5px;
+    }
+    button[style*="display: none"] {
+      display: none !important;
+    }
+    button:hover, button:focus {
+      background: var(--dhl-yellow);
+      color: var(--dhl-red);
+      outline: none;
+    }
+    /* For dynamic buttons inside groups (–, +, etc.) */
+    .group-list button,
+    .condition-group button,
+    .multi-value button,
+    #step-inputs button:not([id="save"]) {
+      width: auto;
+      min-width: 32px;
+      padding: 6px 10px;
+      margin-top: 0;
+      margin-bottom: 0;
+      background: var(--dhl-yellow);
+      color: var(--dhl-red);
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1em;
+      box-shadow: none;
+      transition: background 0.15s, color 0.15s;
+      display: inline-block;
+    }
+    .group-list button:hover,
+    .group-list button:focus,
+    .condition-group button:hover,
+    .condition-group button:focus,
+    .multi-value button:hover,
+    .multi-value button:focus,
+    #step-inputs button:not([id="save"]):hover,
+    #step-inputs button:not([id="save"]):focus {
+      background: var(--dhl-red);
+      color: #fff;
+    }
+    /* Step container (card in card) */
+    #step-container {
+      margin-top: 30px;
+      border: 1.5px solid #ececec;
+      padding: 20px;
+      border-radius: 12px;
+      background-color: #fff7e3;
+      box-shadow: 0 2px 16px 0 rgba(255,204,0,0.08);
+    }
+    #step-inputs {
+      margin-top: 20px;
+    }
+    /* Error text */
+    #step-inputs p,
+    .error {
+      color: var(--dhl-red);
+      font-weight: 500;
+    }
+    /* Responsive */
+    @media (max-width: 600px) {
+      .card {
+        min-width: 0;
+        padding: 18px 8px 16px 8px;
+        max-width: 99vw;
+      }
+      nav {
+        padding: 0 10px;
+        font-size: 1em;
+        height: 48px;
+      }
+      h2 {
+        font-size: 1.08em;
+      }
+    }
+    /* === Compact buttons & toolbars (NEW) === */
+.btn { 
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:6px; font-weight:700;
+  border:none; cursor:pointer; transition:background .15s,color .15s;
+  background: var(--dhl-yellow); color: var(--dhl-red);
+}
+.btn:hover, .btn:focus { background: var(--dhl-red); color:#fff; }
+
+.btn--ghost {
+  background: #fff3c2; color: var(--dhl-red); border:1px solid #f0d98a;
+}
+.btn--danger {
+  background:#ffe1e1; color:#b00020; border:1px solid #ffc3c3;
+}
+.btn--danger:hover, .btn--danger:focus { background:#b00020; color:#fff; }
+
+.toolbar { 
+  display:flex; justify-content:space-between; align-items:center; 
+  gap:8px; margin:8px 0 4px;
+}
+
+/* Rule / Condition blocks */
+.rule-group {
+  border:1.5px solid #ccc; border-radius:10px;
+  padding:12px; margin-top:12px; background:#fffdf3; position:relative;
+}
+.rule-group__header {
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+}
+.condition-row {
+  position: relative; border:1px solid #ddd; border-radius:8px;
+  padding:10px; margin-top:8px; background:#fff;
+}
+.condition-row__remove {
+  position:absolute; top:8px; right:8px;
+}
+.condition-actions {
+  display:flex; justify-content:flex-end; margin-top:8px;
+}
+.values-actions {
+  display:flex; justify-content:flex-end; gap:6px; margin-top:6px;
+}
+/* .btn가 아닌 내부 동적 버튼도 동일 규격로 강제 */
+.group-list button:not(.btn),
+.condition-group button:not(.btn),
+.multi-value button:not(.btn),
+#step-inputs button:not(.btn):not(#save){
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:var(--btn-h);
+  padding:0 var(--btn-px);
+  min-width:var(--btn-minw);
+  border-radius:6px;
+  border:none;
+  font-weight:700;
+  font-size:var(--btn-fz);
+  line-height:1;
+  background:var(--dhl-yellow);
+  color:var(--dhl-red);
+  box-shadow:none;
+  width:auto;                 /* 기본 button{width:100%} 무력화 */
+  margin-top:0; margin-bottom:0;
+  transition:background .15s,color .15s;
+}
+.group-list button:not(.btn):hover,
+.group-list button:not(.btn):focus,
+.condition-group button:not(.btn):hover,
+.condition-group button:not(.btn):focus,
+.multi-value button:not(.btn):hover,
+.multi-value button:not(.btn):focus,
+#step-inputs button:not(.btn):not(#save):hover,
+#step-inputs button:not(.btn):not(#save):focus{
+  background:var(--dhl-red);
+  color:#fff;
+}
+/* === NEW: Write mode segmented toggle === */
+.write-mode {
+  display:flex; align-items:center; gap:12px;
+  padding:10px; margin:8px 0 4px;
+  background:#fffdf3; border:1.5px solid #f0d98a; border-radius:10px;
+}
+.write-mode__title { font-weight:800; color: var(--dhl-red); }
+.write-mode__hint  { font-size:12px; color:#666; margin-left:auto; }
+
+.segmented {
+  display:inline-grid; grid-auto-flow:column; gap:6px; align-items:center;
+}
+.segmented input[type="radio"] { display:none; }
+.segmented label {
+  padding:8px 12px; border:1.5px solid #f0d98a; border-radius:8px;
+  background:#fff3c2; color:var(--dhl-red);
+  font-weight:700; cursor:pointer; user-select:none; transition:all .15s;
+}
+.segmented input[type="radio"]:checked + label {
+  background: var(--dhl-red); color:#fff; border-color: var(--dhl-red);
+}
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">Viko A2A</span>
+    <a href="/">Upload</a>
+    <a href="/pipelines">Country Manager</a>
+    <a href="/pipeline-manager">Pipeline Manager</a>
+    <!-- <a href="/combine">File Combiner</a> -->
+  </nav>
+  <div class="container">
+    <div class="card">
+      <h2>New Country Setup</h2>
+
+      <label for="country">Enter New Country Name:</label>
+      <input type="text" id="country" placeholder="e.g., CN, VN, CR" />
+
+      <!-- <label for="mapping">Upload Header Mapping File:</label>
+      <input type="file" id="mapping" accept=".json" /> -->
+
+      <button id="next">Next</button>
+
+      <div id="step-container" style="display: none;">
+        <label for="step-select">Select a Step to Configure:</label>
+        <select id="step-select">
+          <option value="">-- Select Step --</option>
+        </select>
+
+        <!-- 🔵 NEW: 순서(접두) 입력 -->
+          <label for="step-order">Order (prefix):</label>
+          <input type="number" id="step-order" min="1" step="1" placeholder="e.g. 1 or 12">
+          <span id="step-filename-preview" style="color:#666; font-size:12px;">
+            <!-- ex) Preview: 01_remarks_update.json -->
+          </span>
+          <div id="step-inputs"></div>
+      <button id="save">Save Step Configuration</button>
+        </div>
+      </div>
+
+      </div>
+
+    </div>
+  </div>
+</body>
+<script>
+/* ------------------------------------------------------------------
+ * 0. 글로벌 설정
+ * ------------------------------------------------------------------ */
+let mappedHeaders = ["HAWB", "Carrier", "Remarks", "Inco Term", "Consignor Name", "Mode of Transport", "Item Desc", "Item Desc2", "Item Desc3"]; // TODO: mapping.json 파싱 후 교체
+const DEFAULT_OPERATOR_SET = [
+  "is_blank","is_not_blank","equals","not_equals",
+  "in","not_in","contains","not_contains",
+  "starts_with","not_starts_with"
+];
+let COLUMN_AS_TEXT = false;  // true면 Column을 text input으로 렌더
+function get(obj, path, fallback) {
+  try { return path.split('.').reduce((o, k) => (o && k in o ? o[k] : undefined), obj) ?? fallback; }
+  catch { return fallback; }
+}
+
+function resolveOptions(spec, columns, operatorSet) {
+  if (!spec) return [];
+  if (Array.isArray(spec.options)) return spec.options;
+  if (spec.options_from === 'mapped_headers') return columns || [];
+  if (spec.options_from === 'operator_set') return operatorSet || [];
+  return [];
+}
+
+// (기존 get, resolveOptions 아래에 추가)
+function ensureDatalist(id, suggestions = []) {
+  let dl = document.getElementById(id);
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = id;
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = '';
+  (suggestions || []).forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    dl.appendChild(opt);
+  });
+  return dl;
+}
+
+// 버튼 라벨 기본값(필요시 JSON buttonsSpec로 오버라이드)
+const BUTTONS = {
+  addRule:        '+ Add Rule',
+  removeRule:     'Remove Rule',
+  addCondition:   '+ Add Condition',
+  removeCondition:'Remove',
+  addValue:       '+ Add Value',
+  removeValue:    'Remove',
+  addGroupRow:    '+ Add',         // legacy group_list
+  removeGroupRow: 'Remove',        // legacy group_list
+  addTextRow:     '+ Add',         // legacy text_list
+  removeTextRow:  'Remove'         // legacy text_list
+};
+
+function mkBtn(label, className = 'btn', onClick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = className;
+  b.textContent = label;
+  if (onClick) b.onclick = onClick;
+  return b;
+}
+
+
+// 🔵 NEW: 접두+스텝 → 파일명 계산
+function buildStepFilename(stepId, orderInput) {
+  if (!stepId) return "";
+  const raw = String(orderInput || "").trim();
+  if (!raw) return stepId; // 접두 미입력 시 원래 step 그대로
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n <= 0) return stepId;
+  // 두 자리 0패딩(01, 02, …): 필요하면 자릿수 조정 가능
+  const prefix = String(n).padStart(2, '0');
+  return `${prefix}_${stepId}`;
+}
+
+// 🔵 NEW: 프리뷰 갱신
+function updateStepFilenamePreview() {
+  const stepId = $('#step-select').value;
+  const ord    = $('#step-order').value;
+  const fname  = buildStepFilename(stepId, ord);
+  const box    = $('#step-filename-preview');
+  box.textContent = fname ? `Preview: ${fname}.json` : '';
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 1. DOM 헬퍼
+ * ───────────────────────────────────────────────────────────── */
+const $ =  s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function buildSelect(opts) {
+  const sel = document.createElement('select');
+  opts.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    sel.appendChild(opt);
+  });
+  return sel;
+}
+function lbl(text, elem) {
+  const l = document.createElement('label');
+  l.textContent = text;
+  l.style.display = 'block';
+  l.appendChild(document.createElement('br'));
+  l.appendChild(elem);
+  return l;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 2. Condition Builder (한 Rule 안의 조건 테이블)
+ * ───────────────────────────────────────────────────────────── */
+function renderConditionBody(parent, columns, operatorSet, initial = [], opts = {}) {
+  const condSpec   = opts.condGroupSpec || {};
+  const fields     = Array.isArray(condSpec.inputs) ? condSpec.inputs : [];
+  const colSpec    = fields.find(f => f.name === 'column')   || {};
+  const opSpec     = fields.find(f => f.name === 'operator') || {};
+  const valsSpec   = fields.find(f => f.name === 'values')   || {};
+
+  const addCondLbl = get(opts, 'buttonsSpec.add_condition', BUTTONS.addCondition);
+  const rmCondLbl  = get(opts, 'buttonsSpec.remove_condition', BUTTONS.removeCondition);
+  const addValLbl  = get(opts, 'buttonsSpec.add_value', BUTTONS.addValue);
+  const rmValLbl   = get(opts, 'buttonsSpec.remove_value', BUTTONS.removeValue);
+
+  const listBox = document.createElement('div');
+  parent.appendChild(listBox);
+
+  // 하단 우측: Add Condition
+  const footer = document.createElement('div');
+  footer.className = 'condition-actions';
+  const addBtn = mkBtn(addCondLbl, 'btn');
+  footer.appendChild(addBtn);
+  parent.appendChild(footer);
+
+  function buildColumnControl(value = '') {
+    if (colSpec.type === 'text') {
+      const input = document.createElement('input');
+      input.type = 'text'; input.name = 'column';
+      input.placeholder = colSpec.placeholder || 'Type a column name';
+      input.style.width = '100%'; input.value = value || '';
+      return input;
+    }
+    const sel = buildSelect(resolveOptions({ options_from: 'mapped_headers' }, columns, operatorSet) || columns);
+    sel.name = 'column'; if (value) sel.value = value;
+    return sel;
+  }
+
+  function buildOperatorControl(value = '') {
+    const opts = resolveOptions(opSpec, columns, operatorSet);
+    const sel = buildSelect(opts.length ? opts : operatorSet);
+    sel.name = 'operator'; if (value) sel.value = value;
+    return sel;
+  }
+
+  function addRow(init = {}) {
+    const row = document.createElement('div');
+    row.className = 'condition-row';
+    row.style.cssText = 'position:relative;border:1px solid #ddd;border-radius:8px;padding:10px;margin-top:8px;background:#fff;';
+
+    // Column
+    const colCtrl = buildColumnControl(init.column);
+    row.appendChild(lbl(colSpec.label || 'Column', colCtrl));
+
+    // Operator
+    const opCtrl = buildOperatorControl(init.operator);
+    row.appendChild(lbl(opSpec.label || 'Operator', opCtrl));
+
+    // Values
+    const vBox = document.createElement('div'); vBox.className = 'multi-value';
+    const vLabel = lbl(valsSpec.label || 'Value(s)', vBox);
+    row.appendChild(vLabel);
+
+    const vActions = document.createElement('div');
+    vActions.className = 'values-actions';
+    const addValBtn = mkBtn(addValLbl, 'btn btn--ghost');
+    vActions.appendChild(addValBtn);
+    row.appendChild(vActions);
+
+    function addVal(v = '') {
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex;gap:6px;margin-top:6px';
+      const t = document.createElement('input'); t.type = 'text'; t.name = 'value'; t.value = v; t.style.flex = '1';
+      const d = mkBtn(rmValLbl, 'btn btn--danger', () => r.remove());
+      r.appendChild(t); r.appendChild(d); vBox.appendChild(r);
+    }
+    (Array.isArray(init.values) && init.values.length ? init.values : ['']).forEach(addVal);
+    addValBtn.onclick = () => addVal();
+
+    // is_blank / is_not_blank 시 값 숨김
+    function toggleValues() {
+      const operator = row.querySelector('[name="operator"]')?.value || init.operator;
+      const need = !['is_blank', 'is_not_blank'].includes(operator);
+      vLabel.style.display = need ? 'block' : 'none';
+      vActions.style.display = need ? 'flex' : 'none';
+    }
+    opCtrl.addEventListener('change', toggleValues); toggleValues();
+
+    // 우측 상단: Remove Condition
+    const rem = mkBtn(rmCondLbl, 'btn btn--danger', () => row.remove());
+    rem.className += ' condition-row__remove';
+    row.appendChild(rem);
+
+    listBox.appendChild(row);
+  }
+
+  initial.forEach(addRow);
+  if (!initial.length) addRow();
+  addBtn.onclick = () => addRow();
+}
+
+
+function renderRuleList(holder, columns, operatorSet, initialRules = [], opts = {}) {
+  const targetColumnSpec = opts.targetColumnSpec || {};
+  const targetValueSpec  = opts.targetValueSpec  || {};
+  const condGroupSpec    = opts.condGroupSpec    || {};
+  const buttonsSpec      = opts.buttonsSpec      || {};
+  const stepId           = opts.stepId; // ★ NEW: 누가 호출했는지(step) 식별
+
+  const headerLabel = opts.headerLabel || 'Define Remark Rules';
+  const addRuleLbl  = get(buttonsSpec, 'add_rule',  BUTTONS.addRule);
+  const rmRuleLbl   = get(buttonsSpec, 'remove_rule', BUTTONS.removeRule);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'rule-list-wrapper';
+
+  // 상단: 제목(좌) + Add Rule(우)
+  const header = document.createElement('div');
+  header.className = 'toolbar';
+  const hLeft = document.createElement('div'); hLeft.style.fontWeight = '700'; hLeft.textContent = headerLabel;
+  const addBtn = mkBtn(addRuleLbl, 'btn');
+  header.appendChild(hLeft); header.appendChild(addBtn);
+  wrap.appendChild(header);
+
+  /* ─────────────────────────────────────────────
+   * ★ NEW: Write mode (Append / Replace) 섹션
+   *   - append 선택 시 구분자 입력 노출
+   *   - replace 선택 시 구분자 숨김
+   *   - remarks_update 스텝에서 특히 유용 (단, 다른 rule step도 재사용 가능)
+   * ───────────────────────────────────────────── */
+  // ─────────────────────────────────────────────
+  // NEW: Write mode (Append / Replace) - 깔끔한 세그먼트 토글, Separator UI 없음
+  // ─────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+ * NEW: Write mode (Append / Replace) - 세그먼트 토글
+ *   - Separator UI는 사용하지 않으므로 숨김 스텁만 두고, 크래시 방지
+ * ───────────────────────────────────────────── */
+const modeRow = document.createElement('div');
+modeRow.className = 'write-mode';
+modeRow.innerHTML = `
+  <div class="write-mode__title">Write mode</div>
+  <div class="segmented">
+    <input type="radio" id="wm-append" name="rb-write-mode" value="append" checked>
+    <label for="wm-append">Append</label>
+
+    <input type="radio" id="wm-replace" name="rb-write-mode" value="replace">
+    <label for="wm-replace">Replace</label>
+  </div>
+  <div class="write-mode__hint">Append: Add to the end of the existing value · Replace: Overwrite the value</div>
+`;
+wrap.appendChild(modeRow);
+
+/* ▼ 레거시 호환: sep-wrap 스텁(항상 숨김) + 안전가드 */
+const sepStub = document.createElement('div');
+sepStub.id = 'sep-wrap';
+sepStub.style.display = 'none';
+modeRow.appendChild(sepStub);
+
+function updateSepVisibility() {
+  const sepWrap = wrap.querySelector('#sep-wrap');
+  if (!sepWrap) return;       // ★ 크래시 방지
+  // Separator UI 미사용 → 항상 숨김 유지 (mode와 무관)
+  sepWrap.style.display = 'none';
+}
+modeRow.addEventListener('change', updateSepVisibility);
+updateSepVisibility();
+
+  // 규칙 리스트 본문
+  const list = document.createElement('div'); 
+  list.className = 'rule-list';
+  wrap.appendChild(list);
+  holder.appendChild(wrap);
+
+  function buildTargetColumnControl(initValue) {
+    const spec = targetColumnSpec || {};
+    if (spec.type === 'text') {
+      const input = document.createElement('input');
+      input.type = 'text'; input.name = 'target_column'; input.style.width = '100%';
+      input.value = (initValue ?? spec.default ?? 'Remarks');
+      if (spec.options_from === 'mapped_headers') {
+        ensureDatalist('tgt-col-suggestions', columns);
+        input.setAttribute('list', 'tgt-col-suggestions');
+      }
+      if (spec.placeholder) input.placeholder = spec.placeholder;
+      return input;
+    }
+    const opts = resolveOptions(spec, columns, operatorSet);
+    const src  = (opts.length ? opts : columns);
+    const sel  = buildSelect(src);
+    sel.name   = 'target_column'; sel.style.width = '100%';
+    sel.value  = (initValue ?? spec.default ?? 'Remarks');
+    return sel;
+  }
+
+  function addRule(init = {}) {
+    const rg = document.createElement('div');
+    rg.className = 'rule-group';
+
+    // 룰 헤더: Rule(좌) + Remove Rule(우)
+    const top = document.createElement('div');
+    top.className = 'rule-group__header';
+    const t = document.createElement('div'); t.style.fontWeight = '700'; t.textContent = 'Rule';
+    const rm = mkBtn(rmRuleLbl, 'btn btn--danger', () => rg.remove());
+    top.appendChild(t); top.appendChild(rm); rg.appendChild(top);
+
+    // Target Column
+    const tgtColCtrl = buildTargetColumnControl(init.target_column);
+    rg.appendChild(lbl(targetColumnSpec.label || 'Target Column', tgtColCtrl));
+
+    // Target Value
+    const tv = document.createElement('input');
+    tv.type = 'text'; tv.name = 'target_value'; tv.style.width = '100%';
+    tv.placeholder = targetValueSpec.placeholder || 'e.g., Supplier Paid';
+    tv.value = init.target_value || '';
+    rg.appendChild(lbl(targetValueSpec.label || 'Target Remark Value', tv));
+
+    // Conditions
+    const condTitle = document.createElement('label');
+    condTitle.textContent = condGroupSpec.label || 'Conditions (all must be true)';
+    condTitle.style.display = 'block';
+    rg.appendChild(condTitle);
+
+    const body = document.createElement('div'); rg.appendChild(body);
+    renderConditionBody(body, columns, operatorSet, init.conditions || [], {
+      condGroupSpec, buttonsSpec
+    });
+
+    list.appendChild(rg);
+  }
+
+  (initialRules.length ? initialRules : [{}]).forEach(addRule);
+  addBtn.onclick = () => addRule();
+}
+
+
+
+/* ----------------------------------------------------------------------------
+ * 4. Condition-Body 수집 → [{column,operator,values[]}, …]
+ * ---------------------------------------------------------------------------- */
+function collectConditionBody(body){
+  return Array.from(body.querySelectorAll('.condition-row')).map(row=>{
+    const colEl = row.querySelector('[name="column"]');          // input or select
+    const opEl  = row.querySelector('[name="operator"]');        // select
+    const column = colEl ? colEl.value : '';
+    const operator = opEl ? opEl.value : '';
+    let values = [];
+    if(!['is_blank','is_not_blank'].includes(operator)){
+      values = Array.from(row.querySelectorAll('input[name="value"]'))
+        .map(i=>i.value.trim()).filter(Boolean);
+    }
+    return { column, operator, values };
+  });
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+ * 5. NEXT – /steps 로드
+ * ───────────────────────────────────────────────────────────── */
+$('#next').addEventListener('click', async ()=>{
+  const country=$('#country').value.trim();
+  if(!country){alert('Please Input Country Name');return;}
+
+  const res=await fetch('/steps'); const data=await res.json();
+  const sel=$('#step-select');
+  sel.innerHTML='<option value="">-- Select Step --</option>';
+  data.steps.forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s.id; o.textContent=s.label; sel.appendChild(o);
+  });
+  $('#step-container').style.display='block';
+});
+
+/* ─────────────────────────────────────────────────────────────
+ * 6. STEP 선택 → UI 렌더
+ * ───────────────────────────────────────────────────────────── */
+$('#step-select').addEventListener('change', async ()=>{
+  const stepId=$('#step-select').value;
+  const panel=$('#step-inputs'); const saveBtn=$('#save');
+  panel.innerHTML=''; saveBtn.style.display='none';
+  updateStepFilenamePreview();
+  if(!stepId) return;
+
+  const def=await fetch(`/step-definition?name=${encodeURIComponent(stepId)}`).then(r=>r.json());
+    /* ─── ➊ remarks_update 전용: 토글 + 셀렉터 삽입 ─── */
+  let targetColToggle = null, targetColSel = null;
+
+const ruleDef  = def.inputs?.find(i => i.type === 'rule_list');
+const ruleMode = def.rule_mode === true || !!ruleDef;
+// ✅ file_fill: 조건 없이 "Fill Down"만 고르는 초간단 UI
+if (stepId === 'file_fill') {
+  const box = document.createElement('div');
+  // 제목
+  const title = document.createElement('div');
+  title.textContent = 'file_fill — Fill strategy';
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '8px';
+  box.appendChild(title);
+
+  // 라벨 + 셀렉트
+  const label = document.createElement('label');
+  label.textContent = 'Strategy';
+  label.style.display = 'block';
+  label.style.fontWeight = '600';
+  label.style.margin = '8px 0 6px 0';
+  box.appendChild(label);
+
+  const sel = document.createElement('select');
+  sel.name = 'fill_mode';
+  sel.style.width = '100%';
+  sel.style.padding = '9px 10px';
+  sel.style.border = '1.5px solid #ececec';
+  sel.style.borderRadius = '7px';
+  sel.style.background = '#f7f7f7';
+  sel.style.fontSize = '1em';
+
+  const opt = document.createElement('option');
+  opt.value = 'ffill';
+  opt.textContent = 'Fill Down (forward fill) — default';
+  sel.appendChild(opt);
+
+  box.appendChild(sel);
+
+  // 설명
+  const hint = document.createElement('div');
+  hint.textContent = 'Fill all main columns with the value from the row above. (No conditions)';
+  hint.style.color = '#666';
+  hint.style.fontSize = '12px';
+  hint.style.marginTop = '6px';
+  box.appendChild(hint);
+
+  panel.appendChild(box);
+  $('#save').style.display = 'block';
+  updateStepFilenamePreview();
+  return; // 여기서 종료 → 아래 generic 렌더로 안 내려가게
+}
+
+if (ruleMode) {
+  const cols = ruleDef?.columns_from === 'mapped_headers'
+    ? mappedHeaders
+    : (ruleDef?.columns || mappedHeaders);
+  const ops  = ruleDef?.operator_set?.length ? ruleDef.operator_set : DEFAULT_OPERATOR_SET;
+
+  // ▼ JSON 선언형 스펙 추출
+  const ruleInputs = Array.isArray(ruleDef?.inputs) ? ruleDef.inputs : [];
+  const targetColumnSpec = ruleInputs.find(x => x.name === 'target_column');
+  const targetValueSpec  = ruleInputs.find(x => x.name === 'target_value');
+  const condGroupSpec    = ruleInputs.find(x => x.type === 'group_list' && x.name === 'conditions');
+  const buttonsSpec      = ruleInputs.find(x => x.type === 'buttons');
+
+  renderRuleList(panel, cols, ops, [], {
+    targetColumnSpec, targetValueSpec, condGroupSpec, buttonsSpec,
+    headerLabel: ruleDef?.label || 'Define Remark Rules',
+    stepId
+  });
+  $('#save').style.display = 'block';
+  updateStepFilenamePreview();
+  return;
+}
+
+
+
+  /* ---------- 간단 Step 렌더 ---------- */
+  if(!Array.isArray(def.inputs)){panel.innerHTML='<p>Invalid step-definition</p>';return;}
+  def.inputs.forEach(inp=>{
+    const w=document.createElement('div'); w.style.marginBottom='12px';
+    w.appendChild(lbl(inp.label||inp.name, document.createElement('div')));
+    if(inp.type==='group_list'){renderLegacyGroupList(w, inp); panel.appendChild(w); return;}
+    if(inp.type==='text_list'){renderLegacyTextList(w, inp); panel.appendChild(w); return;}
+    let el;
+    if(inp.type==='select'){
+      const opts=inp.options_from==='mapped_headers' ? mappedHeaders : (inp.options||[]);
+      el=buildSelect(opts);
+    }else{
+      el=document.createElement('input'); el.type=inp.type; if(inp.placeholder) el.placeholder=inp.placeholder;
+      el.style.width='100%';
+    }
+    el.name=inp.name; w.appendChild(el); panel.appendChild(w);
+  });
+  saveBtn.style.display='block';
+});
+
+$('#step-order').addEventListener('input', updateStepFilenamePreview); // 🔵 NEW
+
+/* ---- 레거시 group_list / text_list 렌더 함수 (간단 Step 용) ---- */
+function renderLegacyGroupList(w, inp){
+  const g = document.createElement('div'); g.className='group-list'; g.dataset.name=inp.name;
+
+  // 하단 우측: + Add
+  const footer = document.createElement('div'); footer.style.cssText='display:flex;justify-content:flex-end;margin-top:8px;';
+  const add = mkBtn(BUTTONS.addGroupRow, 'btn'); footer.appendChild(add);
+
+  function addRow(){
+    const r = document.createElement('div');
+    r.className='condition-group';
+    r.style.cssText='position:relative;border:1px solid #ccc;border-radius:8px;padding:8px;margin-top:8px;background:#fff;';
+    inp.inputs.forEach(f=>{
+      const l=document.createElement('label'); l.textContent=f.label||f.name; l.style.display='block';
+      let el;
+      if(f.type==='select'){
+        const opts=f.options_from==='mapped_headers'?mappedHeaders:(f.options||[]);
+        el=buildSelect(opts);
+      }else{
+        el=document.createElement('input'); el.type=f.type; if(f.placeholder) el.placeholder=f.placeholder;
+      }
+      el.name=f.name; el.style.width='100%'; l.appendChild(document.createElement('br')); l.appendChild(el); r.appendChild(l);
+    });
+    const rm = mkBtn(BUTTONS.removeGroupRow, 'btn btn--danger', () => r.remove());
+    rm.style.cssText = 'position:absolute;top:8px;right:8px;';
+    r.appendChild(rm);
+    g.appendChild(r);
+  }
+
+  addRow();
+  add.onclick = addRow;
+  w.appendChild(g);
+  w.appendChild(footer);
+}
+
+function renderLegacyTextList(w, inp){
+  const box=document.createElement('div');
+  const footer=document.createElement('div'); footer.style.cssText='display:flex;justify-content:flex-end;margin-top:6px;';
+  const addBtn = mkBtn(BUTTONS.addTextRow, 'btn');
+  footer.appendChild(addBtn);
+
+  function addRow(v=''){
+    const r=document.createElement('div'); r.style.cssText='display:flex;gap:6px;margin-top:6px';
+    const t=document.createElement('input'); t.type='text'; t.name=inp.name; t.value=v; t.style.flex='1';
+    const d=mkBtn(BUTTONS.removeTextRow, 'btn btn--danger', ()=>r.remove());
+    r.appendChild(t); r.appendChild(d); box.appendChild(r);
+  }
+  addRow();
+  addBtn.onclick = () => addRow();
+  w.appendChild(box);
+  w.appendChild(footer);
+}
+
+/* ------------------------------------------------------------------
+ * 7. SAVE – Rule Mode OR Legacy Mode
+ * ------------------------------------------------------------------ */
+$('#save').addEventListener('click', async () => {
+
+  const country = $('#country').value.trim();
+  const stepId  = $('#step-select').value;
+  const ord     = $('#step-order').value;                  // 🔵 NEW
+  const stepWithPrefix = buildStepFilename(stepId, ord);   // 🔵 NEW
+
+/* ───────────────────────────────────────── Rule-Builder 모드 */
+const ruleList = $('.rule-list');
+if (ruleList) {
+  const rules = [];
+  $$('.rule-group').forEach(rg => {
+    const tv = rg.querySelector('input[name="target_value"]').value.trim();
+    const tgtEl = rg.querySelector('[name="target_column"]');
+    const tgtCol = tgtEl && tgtEl.value ? tgtEl.value : 'Remarks';
+
+    const body  = rg.querySelector('.condition-row').parentElement;
+    const conds = collectConditionBody(body);
+
+    const ruleObj = { target_value: tv, conditions: conds };
+    if (tgtCol && tgtCol !== 'Remarks') ruleObj.target_column = tgtCol;
+    rules.push(ruleObj);
+  });
+
+  // NEW: append_mode만 Boolean으로 전송 (Separator는 서버 기본값 사용)
+  const mode = document.querySelector('input[name="rb-write-mode"]:checked')?.value || 'append';
+  const condsPayload = { append_mode: (mode === 'append'), rules };
+  const payload = {
+    country,
+    step: stepWithPrefix,
+    conditions: condsPayload
+  };
+
+  console.log('[SAVE/RB] payload →', payload);
+  const res = await fetch('/save-step', {
+    method : 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body   : JSON.stringify(payload)
+  });
+  alert(res.ok ? 'Saved!' : 'Save failed');
+  return;
+}
+
+
+  /* ───────────────────────────────────────── Legacy(간단) 모드 */
+  const conds = {};
+
+  /* ▶ ① 일반 input / select 수집 */
+  $$('#step-inputs input[name], #step-inputs select[name]').forEach(el => {
+    if (el.closest('.condition-group')) return;       // group_list 는 따로
+    if (conds[el.name] !== undefined) {
+      /* 같은 name 이 여러 번 나오면 배열로 변환 */
+      if (Array.isArray(conds[el.name])) {
+        conds[el.name].push(el.value);
+      } else {
+        conds[el.name] = [conds[el.name], el.value];
+      }
+    } else {
+      conds[el.name] = el.value;
+    }
+  });
+
+  /* ▶ ② group_list 수집 */
+  $$('.group-list').forEach(g => {
+    const key = g.dataset.name;
+    const arr = [];
+    g.querySelectorAll('.condition-group').forEach(cg => {
+      const obj = {};
+      cg.querySelectorAll('input, select').forEach(el => {
+        obj[el.name] = el.value;
+      });
+      arr.push(obj);
+    });
+    conds[key] = arr;
+  });
+
+  /* ▶ ③ remarks_update 한정 - 토글 target_column */
+  const toggle = $('#toggleTargetCol');
+  if (stepId === 'remarks_update' && toggle && toggle.checked) {
+    conds.target_column = $('#targetColumnSel').value;   // Remarks 대신 업데이트할 열
+  }
+
+  const payload = { country, step: stepWithPrefix, conditions: conds };
+
+  console.log('[SAVE/LEGACY] payload →', payload);
+  const res = await fetch('/save-step', {
+    method : 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body   : JSON.stringify(payload)
+  });
+  alert(res.ok ? 'Saved!' : 'Save failed');
+});
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "step": "kpi_calculation",
+  "conditions": {
+    "in_pbi_column": "PBI",
+    "in_pbi_yes_value": "Yes",
+    "total_order_col": "Unique Order",
+    "precision": "2"
+  }
+}

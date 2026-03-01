@@ -1,0 +1,58 @@
+{
+  "id": "remarks_update",
+  "label": "Remarks Update",
+  "rule_mode": true,
+  "inputs": [
+    {
+      "type": "rule_list",
+      "name": "rules",
+      "label": "Define Remark Rules",
+      "columns_from": "mapped_headers",
+      "operator_set": [
+        "is_blank",
+        "is_not_blank",
+        "equals",
+        "not_equals",
+        "in",
+        "not_in",
+        "contains",
+        "not_contains",
+        "starts_with",
+        "not_starts_with"
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "target_column",
+          "label": "Target Column",
+          "default": "Remarks"
+        },
+        {
+          "type": "text",
+          "name": "target_value",
+          "label": "Target Value",
+          "placeholder": "Example: Supplier Paid"
+        },
+        {
+          "type": "group_list",
+          "name": "conditions",
+          "label": "Condition",
+          "inputs": [
+            { "type": "text",    "name": "column",   "label": "Condition Column", "placeholder": "such as Remarks..." },
+            { "type": "select",  "name": "operator", "label": "Operator",   "options_from": "operator_set" },
+            { "type": "text_list","name": "values",  "label": "Values" }
+          ]
+        },
+        {
+          "type": "buttons",
+          "add_rule": "+ Add Rule",
+          "remove_rule": "Remove Rule",
+          "add_condition": "+ Add Condition",
+          "remove_condition": "Remove Condition",
+          "add_value": "+ Add Value",
+          "remove_value": "Remove Value"
+        }
+      ]
+    }
+  ]
+}

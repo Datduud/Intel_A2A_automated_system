@@ -1,0 +1,26 @@
+{
+  "step": "remarks_update",
+  "conditions": {
+    "append_mode": false,
+    "rules": [
+      {
+        "target_value": "CNW",
+        "conditions": [
+          {
+            "column": "Carrier",
+            "operator": "equals",
+            "values": [
+              "CO10"
+            ]
+          },
+          {
+            "column": "Remarks",
+            "operator": "is_blank",
+            "values": []
+          }
+        ],
+        "target_column": "Carrier"
+      }
+    ]
+  }
+}

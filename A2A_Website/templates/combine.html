@@ -1,0 +1,206 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Intel A2A Validation - File Combiner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root {
+        --dhl-yellow: #FFCC00;
+        --dhl-red: #D40511;
+        --dhl-dark: #333;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        background: var(--dhl-yellow);
+        min-height: 100vh;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      nav {
+        background: var(--dhl-red);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        height: 60px;
+        font-weight: bold;
+        font-size: 1.1em;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px 0 rgba(50,0,0,0.07);
+      }
+      nav .logo {
+        font-size: 1.3em;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        color: var(--dhl-yellow);
+        margin-right: 30px;
+        text-transform: uppercase;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        margin-right: 18px;
+        transition: color 0.15s;
+        padding: 6px 10px;
+        border-radius: 4px;
+      }
+      nav a:hover, nav a:focus {
+        color: var(--dhl-yellow);
+        background: rgba(255,255,255,0.10);
+      }
+      .container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 32px 8px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 32px 0 rgba(50,0,0,0.09);
+        padding: 36px 32px 28px 32px;
+        min-width: 330px;
+        max-width: 500px;
+        width: 100%;
+        margin-top: 24px;
+      }
+      h2 {
+        color: var(--dhl-red);
+        font-size: 1.4em;
+        font-weight: 800;
+        margin-top: 0;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+        text-align: center;
+      }
+      label {
+        font-weight: 600;
+        color: var(--dhl-dark);
+        margin-bottom: 8px;
+        display: block;
+      }
+      input[type="file"] {
+        width: 100%;
+        padding: 8px 6px;
+        border: 1.5px solid #ececec;
+        border-radius: 7px;
+        background: #fcfcfc;
+        font-size: 1em;
+        margin-top: 3px;
+        margin-bottom: 12px;
+        box-sizing: border-box;
+        transition: border 0.15s;
+      }
+      input[type="file"]:focus {
+        border: 1.5px solid var(--dhl-red);
+        outline: none;
+      }
+      button[type="submit"] {
+        display: block;
+        width: 100%;
+        background: var(--dhl-red);
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.07em;
+        border: none;
+        border-radius: 7px;
+        padding: 12px 0;
+        margin-top: 10px;
+        transition: background 0.18s, color 0.18s;
+        cursor: pointer;
+        box-shadow: 0 2px 8px 0 rgba(212,5,17,0.10);
+        letter-spacing: 0.5px;
+      }
+      button[type="submit"]:hover,
+      button[type="submit"]:focus {
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        outline: none;
+      }
+      .icon-button {
+        background: none;
+        border: none;
+        font-size: 2em;
+        line-height: 1;
+        padding: 0 6px;
+        cursor: pointer;
+        color: #D40511;
+      }
+      .icon-button:hover { color: #a00; }
+      @media (max-width: 600px) {
+        .card {
+          min-width: 0;
+          padding: 18px 8px 16px 8px;
+          max-width: 98vw;
+        }
+        nav {
+          padding: 0 12px;
+          font-size: 1em;
+          height: 48px;
+        }
+        h2 { font-size: 1.05em; }
+      }
+    </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">Viko A2A</span>
+    <a href="/">Upload</a>
+    <a href="/pipelines">Country Manager</a>
+    <a href="/combine">File Combiner</a>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>File Combiner</h2>
+      <form method="POST" action="/combine" enctype="multipart/form-data" id="combine-form">
+        <div id="file-list">
+          <div class="file-row">
+            <label>validated_result.xlsx</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="file" name="files[]" accept=".xlsx" required>
+              <button type="button" class="icon-button" onclick="removeRow(this)">×</button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center; margin: 10px 0;">
+          <button type="button" class="icon-button" onclick="addRow()">＋</button>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+function addRow(){
+  const list = document.getElementById('file-list');
+  const row = document.createElement('div');
+  row.className = 'file-row';
+  row.innerHTML = `
+    <label>validated_result.xlsx</label>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="file" name="files[]" accept=".xlsx" required>
+      <button type="button" class="icon-button" onclick="removeRow(this)">×</button>
+    </div>`;
+  list.appendChild(row);
+}
+function removeRow(btn){
+  const row = btn.closest('.file-row');
+  const list = document.getElementById('file-list');
+  if (list.querySelectorAll('.file-row').length > 1) {
+    row.remove();
+  } else {
+    // 최소 1개는 남기기
+    row.querySelector('input[type="file"]').value = '';
+  }
+}
+</script>
+</body>
+</html> -->

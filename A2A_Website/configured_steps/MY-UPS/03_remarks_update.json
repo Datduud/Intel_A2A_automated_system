@@ -1,0 +1,110 @@
+{
+  "step": "remarks_update",
+  "conditions": {
+    "rules": [
+      {
+        "target_value": "UPS",
+        "conditions": [
+          {
+            "column": "Carrier",
+            "operator": "is_blank",
+            "values": []
+          }
+        ],
+        "target_column": "Carrier"
+      },
+      {
+        "target_value": "FG",
+        "conditions": [
+          {
+            "column": "FG",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      },
+      {
+        "target_value": "WD",
+        "conditions": [
+          {
+            "column": "WD",
+            "operator": "is_not_blank",
+            "values": []
+          }
+        ]
+      },
+      {
+        "target_value": "WD",
+        "conditions": [
+          {
+            "column": "Invoice Number",
+            "operator": "starts_with",
+            "values": [190]
+          }
+        ]
+      },
+      {
+        "target_value": "ROAD",
+        "conditions": [
+          {
+            "column": "Mode of Transport",
+            "operator": "equals",
+            "values": [
+              "ROAD"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "RMA",
+        "conditions": [
+          {
+            "column": "Item Desc3",
+            "operator": "contains",
+            "values": [
+              "RMA"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "C TERM",
+        "conditions": [
+          {
+            "column": "Consignor Name",
+            "operator": "not_contains",
+            "values": [
+              "INTEL"
+            ]
+          },
+          {
+            "column": "Inco Term",
+            "operator": "starts_with",
+            "values": [
+              "C"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "D TERM",
+        "conditions": [
+          {
+            "column": "Consignor Name",
+            "operator": "not_contains",
+            "values": [
+              "INTEL"
+            ]
+          },
+          {
+            "column": "Inco Term",
+            "operator": "starts_with",
+            "values": [
+              "D"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

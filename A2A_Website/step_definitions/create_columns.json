@@ -1,0 +1,11 @@
+{
+  "label": "Create Required Columns",
+  "inputs": [
+    {
+      "type": "text_list",
+      "name": "columns",
+      "label": "Enter column names to create",
+      "placeholder": "e.g., Carrier, Unique HAWB"
+    }
+  ]
+}

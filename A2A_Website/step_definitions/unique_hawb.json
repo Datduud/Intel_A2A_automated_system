@@ -1,0 +1,12 @@
+{
+  "label": "Unique HAWB Filter",
+  "inputs": [
+    {
+      "type": "text",
+      "name": "column",
+      "label": "HAWB Column in Main Data",
+      "placeholder": "e.g., HAWB",
+      "default": "HAWB"
+    }
+  ]
+}

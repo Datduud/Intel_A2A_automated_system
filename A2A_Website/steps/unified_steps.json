@@ -1,0 +1,34 @@
+{
+  "steps": [
+    {
+      "id": "create_columns",
+      "label": "Create Required Columns",
+      "description": "Generate columns like Carrier, Unique HAWB, etc."
+    },
+    {
+      "id": "remarks_update",
+      "label": "Update Remarks",
+      "description": "Apply rules like Internal Trucking, Supplier Paid, WD..."
+    },
+        {
+      "id": "unique_hawb",
+      "label": "Unique HAWB Filter",
+      "description": "Keep only the first row of each HAWB and auto‑create ‘Unique Order’ & ‘Total Order’ columns."
+    },
+    {
+      "id": "pbi_multi_merge",
+      "label": "HAWB Validation",
+      "description": "Check against FG PBI or other reference files."
+    },
+      {
+      "id": "kpi_calculation",
+      "label": "Kpi calculation",
+      "description": "Remove rows with Remarks = WD, ROAD, FG, etc."
+    },
+          {
+      "id": "file_fill",
+      "label": "Perform fill down",
+      "description": "Remove rows with Remarks = WD, ROAD, FG, etc."
+    }
+  ]
+}

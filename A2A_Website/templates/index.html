@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intel A2A Validation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root {
+        --dhl-yellow: #FFCC00;
+        --dhl-red: #D40511;
+        --dhl-dark: #333;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        background: var(--dhl-yellow);
+        min-height: 100vh;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      nav {
+        background: var(--dhl-red);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        height: 60px;
+        font-weight: bold;
+        font-size: 1.1em;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px 0 rgba(50,0,0,0.07);
+      }
+      nav .logo {
+        font-size: 1.3em;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        color: var(--dhl-yellow);
+        margin-right: 30px;
+        text-transform: uppercase;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        margin-right: 18px;
+        transition: color 0.15s;
+        padding: 6px 10px;
+        border-radius: 4px;
+      }
+      nav a:hover, nav a:focus {
+        color: var(--dhl-yellow);
+        background: rgba(255,255,255,0.10);
+      }
+      .container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 32px 8px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 4px 32px 0 rgba(50,0,0,0.09);
+        padding: 36px 32px 28px 32px;
+        min-width: 330px;
+        max-width: 430px;
+        width: 100%;
+        margin-top: 24px;
+      }
+      h2 {
+        color: var(--dhl-red);
+        font-size: 1.4em;
+        font-weight: 800;
+        margin-top: 0;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+        text-align: center;
+      }
+      form label {
+        font-weight: 600;
+        color: var(--dhl-dark);
+        margin-bottom: 8px;
+        display: block;
+      }
+      form select,
+      form input[type="number"],
+      form input[type="file"] {
+        width: 100%;
+        padding: 9px 10px;
+        border: 1.5px solid #ececec;
+        border-radius: 7px;
+        background: #f7f7f7;
+        font-size: 1em;
+        margin-top: 3px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+        transition: border 0.15s;
+      }
+      form input[type="file"] {
+        padding: 6px 2px;
+        background: #fcfcfc;
+      }
+      form input[type="number"]:focus,
+      form select:focus,
+      form input[type="file"]:focus {
+        border: 1.5px solid var(--dhl-red);
+        outline: none;
+      }
+      button[type="submit"] {
+        display: block;
+        width: 100%;
+        background: var(--dhl-red);
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.07em;
+        border: none;
+        border-radius: 7px;
+        padding: 12px 0;
+        margin-top: 10px;
+        transition: background 0.18s, color 0.18s;
+        cursor: pointer;
+        box-shadow: 0 2px 8px 0 rgba(212,5,17,0.10);
+        letter-spacing: 0.5px;
+      }
+      button[type="submit"]:hover,
+      button[type="submit"]:focus {
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        outline: none;
+      }
+      @media (max-width: 600px) {
+        .card {
+          min-width: 0;
+          padding: 18px 8px 16px 8px;
+          max-width: 98vw;
+        }
+        nav {
+          padding: 0 12px;
+          font-size: 1em;
+          height: 48px;
+        }
+        h2 {
+          font-size: 1.05em;
+        }
+      }
+      .icon-button {
+        background: none;
+        border: none;
+        font-size: 2em;
+        line-height: 1;
+        padding: 0 6px;
+        cursor: pointer;
+        color: #D40511;
+      }
+      .icon-button:hover {
+        color: #a00;
+      }
+      .header-mapping-section {
+        display: none;
+        margin-bottom: 10px;
+      }
+      .header-mapping-preview {
+        margin: 12px 0 24px 0;
+        border-collapse: collapse;
+        width: 100%;
+        background: #f9f7e2;
+        font-size: 0.97em;
+      }
+      .header-mapping-preview th, .header-mapping-preview td {
+        border: 1px solid #e5e5e5;
+        padding: 5px 8px;
+        text-align: left;
+      }
+      .header-mapping-preview th {
+        background: #ffe380;
+      }
+      .header-mapping-preview td {
+        background: #fffbe9;
+      }
+
+      /* [NEW] 헤더매핑 미리보기 색상 표시 */
+      .header-mapping-preview .map-ok   { color:#1a73e8; font-weight:600; }  /* 파란색 = 매칭 OK */
+      .header-mapping-preview .map-miss { color:#d93025; font-weight:600; }  /* 빨간색 = 매칭 실패 */
+    </style>
+</head>
+<body>
+    <nav>
+      <span class="logo">Viko A2A</span>
+      <a href="/">Upload</a>
+      <a href="/pipelines">Country Manager</a>
+      <a href="/pipeline-manager">Pipeline Manager</a>
+      <!-- <a href="/combine">File Combiner</a> -->
+    </nav>
+    <div class="container">
+      <div class="card">
+        <h2>Upload Broker Excel File</h2>
+<form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
+  <div id="file-country-pairs">
+    <!-- Initial input group -->
+    <div class="file-country-group">
+      <label>Raw Data Excel</label>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="file" name="raw_file[]" accept=".xlsx" required>
+        <select name="country[]" required>
+          {% for c in countries %}
+            <option value="{{c}}">{{c}}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="icon-button" onclick="removeInputGroup(this)">×</button>
+      </div>
+      <!-- Header Mapping Section: moved here! -->
+      <div style="margin-top: 8px;">
+        <label>Header Column Mapping</label>
+        <input type="file" name="header_file[]" class="header-file-input" accept=".xlsx">
+        <div class="header-mapping-section">
+          <label>Select Mapping Group:</label>
+          <select class="header-mapping-dropdown" name="header_mapping_group[]"></select>
+          <table class="header-mapping-preview"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 10px 0;">
+    <button type="button" class="icon-button" onclick="addFileCountryGroup()">＋</button>
+  </div>
+
+  <label>HAWB Validation Source</label>
+  <input type="file" name="hawb_file" accept=".xlsx" required>
+
+  <label>Target Year</label>
+  <input type="number" name="target_year" min="2020" max="2030" required>
+
+  <label>Target Month</label>
+  <input type="number" name="target_month" min="1" max="12" required>
+
+  <button type="submit">Submit</button>
+</form>
+      </div>
+    </div>
+
+<!-- 🔽🔽🔽 [추가: Validation 진행 로그 모달] 🔽🔽🔽 -->
+<div id="log-modal" style="display:none;">
+  <div class="log-modal-content">
+
+    <!-- [NEW-ERRCLOSE] Close button (hidden by default; shown on error) -->
+    <button id="log-modal-close" type="button" aria-label="Close"
+            class="log-modal-close" style="display:none;">×</button>
+
+    <!-- [NEW] Error banner (hidden by default) -->
+    <div id="error-banner" style="display:none; margin: -8px 0 14px 0; border:1.5px solid #f1c0c0; background:#fff5f5; border-radius:10px; padding:10px 12px;">
+      <div id="error-title" style="font-weight:800; color:#d93025; margin-bottom:6px;">❌ Validation Error</div>
+      <!-- [NEW] human-friendly explainer -->
+      <div id="error-explainer" style="font-size:0.95em; color:#7a1b16; margin:0 0 6px 0; display:none;"></div>
+      <!-- [DISABLED] raw/sanitized error preview (hidden by request) -->
+      <!-- <pre id="error-message" style="white-space:pre-wrap; margin:0; color:#7a1b16;"></pre> -->
+      <div id="error-countdown" style="margin-top:8px; font-size:0.95em; color:#a33;">
+        
+      </div>
+    </div>
+    <!-- [NEW] Error banner end -->
+
+    <h3>Validation in Progress...</h3>
+    <pre id="log-output">Initializing...\n</pre>
+  </div>
+</div>
+
+<style>
+  /* ===== Validation Log Modal ===== */
+  #log-modal {
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .log-modal-content {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    width: 80%; max-width: 600px;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+    border-top: 6px solid var(--dhl-red);
+    position: relative; /* [NEW-ERRCLOSE] for close button positioning */
+  }
+  .log-modal-content h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--dhl-red);
+    text-align: center;
+  }
+  #log-output {
+    background: #f9f7e2;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 0.92em;
+    border-radius: 8px;
+    color: #333;
+    white-space: pre-wrap;
+  }
+  /* [FIX] X 아이콘 정중앙 정렬 */
+.log-modal-close{
+  position:absolute;
+  top:10px; right:10px;
+  width:32px; height:32px;
+  border:none;
+  border-radius:50%;
+  background: var(--dhl-yellow);
+  color: var(--dhl-red);
+  font-size:18px;          /* 아이콘 크기 미세 조정 */
+  font-weight:900;
+  /* 중앙 정렬 핵심 */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;           /* 폰트 메트릭 영향 제거 */
+  padding:0;               /* 여백 제거 */
+  cursor:pointer;
+  box-shadow: 0 2px 8px 0 rgba(212,5,17,0.12);
+}
+.log-modal-close:hover, .log-modal-close:focus{
+  background: var(--dhl-red);
+  color:#fff;
+  outline:none;
+}
+</style>
+<!-- 🔼🔼🔼 [추가 끝] 🔼🔼🔼 -->
+
+</body>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+const STANDARD_HEADERS = [
+  "#", "Form Type", "Declaration Type", "Declaration Date",
+  "Customs Broker", "Commodity Type", "Mode of Transport", "Carrier",
+  "MASTER AWB", "HAWB", "UPS Trk", "PO #",
+  "Invoice Date", "Invoice Number", "Inco Term", "Inco Term Text",
+  "Consignee Name", "Consignor Name", "Port of Loading", "Port of Discharge",
+  "Item Desc", "Item Desc2", "Item Desc3", "HS Code", "IPN"
+];
+
+function addFileCountryGroup() {
+  const container = document.getElementById('file-country-pairs');
+  const group = document.createElement('div');
+  group.className = 'file-country-group';
+
+  group.innerHTML = `
+    <label>Raw Data Excel</label>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <input type="file" name="raw_file[]" accept=".xlsx" required>
+      <select name="country[]" required>
+        {% for c in countries %}
+          <option value="{{c}}">{{c}}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="icon-button" onclick="removeInputGroup(this)">×</button>
+    </div>
+    <div style="margin-top: 8px;">
+      <label>Header Column Mapping</label>
+      <input type="file" name="header_file[]" class="header-file-input" accept=".xlsx">
+      <div class="header-mapping-section">
+        <label>Select Mapping Group:</label>
+        <select class="header-mapping-dropdown" name="header_mapping_group[]"></select>
+        <table class="header-mapping-preview"></table>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(group);
+
+  // 헤더 매핑 이벤트 바인딩
+  bindHeaderMapping(group);
+  // [NEW] Raw 헤더 리더 바인딩
+  if (window.__headerMappingColorizer) window.__headerMappingColorizer.bindRawHeaderReader(group);
+}
+
+function removeInputGroup(button) {
+  const group = button.closest('.file-country-group');
+  group.remove();
+}
+
+// 최초 1개 그룹에도 바인딩!
+window.onload = function() {
+  document.querySelectorAll('.file-country-group').forEach(bindHeaderMapping);
+}
+
+function bindHeaderMapping(group) {
+  const fileInput = group.querySelector('.header-file-input');
+  const mappingSection = group.querySelector('.header-mapping-section');
+  const mappingDropdown = group.querySelector('.header-mapping-dropdown');
+  const previewTable = group.querySelector('.header-mapping-preview');
+
+  let mappings = {};
+
+  if (!fileInput) return;
+
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) {
+      mappingSection.style.display = "none";
+      mappingDropdown.innerHTML = "";
+      previewTable.innerHTML = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const data = new Uint8Array(ev.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      // Extract the 3rd row for mapping groups (x축), E열부터(4번째 열, 0-indexed)
+      const headers = [];
+      let colIdx = 4;
+      while(true) {
+        const cellAddr = XLSX.utils.encode_cell({c: colIdx, r: 2});
+        const cell = firstSheet[cellAddr];
+        if(!cell || !cell.v || String(cell.v).trim() === "") break;
+        headers.push(String(cell.v).trim());
+        colIdx += 1;
+      }
+      // Extract mapping values
+      mappings = {};
+      for(let i=0; i<STANDARD_HEADERS.length; i++) {
+        const row = 3 + i;
+        for(let g=0; g<headers.length; g++) {
+          const valCell = XLSX.utils.encode_cell({c: 4+g, r: row});
+          const val = firstSheet[valCell] ? String(firstSheet[valCell].v).trim() : "";
+          if(!mappings[headers[g]]) mappings[headers[g]] = {};
+          mappings[headers[g]][STANDARD_HEADERS[i]] = val;
+        }
+      }
+      mappingDropdown.innerHTML = "";
+      headers.forEach(h => {
+        const option = document.createElement('option');
+        option.value = h;
+        option.textContent = h;
+        mappingDropdown.appendChild(option);
+      });
+      mappingSection.style.display = 'block';
+      mappingDropdown.onchange = function() {
+        showMappingTable(mappingDropdown.value, mappings, previewTable);
+      };
+      if(headers.length) showMappingTable(headers[0], mappings, previewTable);
+      mappingDropdown.onchange();
+
+      // [NEW] 컬러라이저에 매핑 캐시 전달 및 훅 연결
+      if (window.__headerMappingColorizer) {
+        window.__headerMappingColorizer.attachToGroup(group, mappings);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function showMappingTable(mappingGroup, mappings, table) {
+  table.innerHTML = "";
+  const map = mappings[mappingGroup];
+  if(!map) return;
+  let html = `<tr><th>Standard Column</th><th>Mapped Column</th></tr>`;
+  for(let key of STANDARD_HEADERS) {
+    html += `<tr>
+      <td>${key}</td>
+      <td>${map[key] || ""}</td>
+    </tr>`;
+  }
+  table.innerHTML = html;
+}
+</script>
+
+<!-- [NEW] 초기 그룹에 Raw 헤더 리더 바인딩 & 3초 폴링 포함 컬러라이저 -->
+<script>
+/* ===== [NEW] Header Mapping Preview Colorizer =====
+ * - Raw 헤더 & Mapping 미리보기 매칭 결과를 색상으로 표시
+ * - 서버의 정규화 규칙과 동일: 공백 제거 + 소문자
+ * - 이중헤더 대응: 1행, 2행, "1행+2행" 결합 헤더 후보 모두 비교
+ * - 이벤트 기반 + 3초 폴링 보강
+ */
+(function(){
+  function _normalize(s){ return String(s||'').replace(/\s+/g,'').toLowerCase(); }
+
+    // [FIX] 병합된 상단 헤더 값을 오른쪽으로 전달(Invoice → Invoice, Invoice, …)
+  function _ffill(arr){
+    let last = "";
+    return arr.map(v=>{
+      const t = (v==null?"":String(v)).trim();
+      if (t){ last = t; return t; }
+      return last;
+    });
+  }
+
+  async function readFirstTwoRowsHeaders(file){
+    if(!file) return null;
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+    const sh = wb.Sheets[wb.SheetNames[0]];
+    if(!sh) return null;
+
+    // helper: 특정 행의 모든 셀 텍스트 배열
+    function rowValues(r){
+      const out=[]; const ref=sh['!ref']?XLSX.utils.decode_range(sh['!ref']):{e:{c:50}};
+      for(let c=0;c<=ref.e.c;c++){
+        const cell = sh[XLSX.utils.encode_cell({r, c})];
+        out.push(cell ? String(cell.v).trim() : "");
+      }
+      return out;
+    }
+    const r0=rowValues(0), r1=rowValues(1);
+    const r0ff=_ffill(r0); // [FIX] 상단 헤더 병합 보정(오른쪽으로 채움)
+
+    const set=new Set();
+    const cols=Math.max(r0ff.length, r1.length); // [FIX] r0 → r0ff
+    for(let i=0;i<cols;i++){
+      const a=r0ff[i]||"", b=r1[i]||"";         // [FIX] r0[i] → r0ff[i]
+      if(a) set.add(_normalize(a));
+      if(b) set.add(_normalize(b));
+      if(a && b) set.add(_normalize(a+" "+b));
+    }
+
+    // header:1로도 1행을 보강
+    try{
+      const aoa = XLSX.utils.sheet_to_json(sh,{header:1, blankrows:false});
+      if(Array.isArray(aoa) && aoa.length){
+        (aoa[0]||[]).forEach(v=> set.add(_normalize(v)));
+      }
+    }catch(_){}
+    return set;
+  }
+
+  function colorizeGroup(group){
+    const table = group.querySelector('.header-mapping-preview');
+    const dropdown = group.querySelector('.header-mapping-dropdown');
+    const headerSet = group.__rawHeaderSetNormalized;
+    const mappings = group.__mappingsCache;
+    if(!table || !dropdown || !headerSet || !mappings) return;
+
+    const gname = dropdown.value;
+    const map = mappings[gname] || {};
+
+    const rows = table.querySelectorAll('tr');
+    for(let i=1;i<rows.length;i++){
+      const tr = rows[i]; const tds = tr.children;
+      if(tds.length<2) continue;
+      const std = tds[0], mapped = tds[1];
+      std.classList.remove('map-ok','map-miss');
+      mapped.classList.remove('map-ok','map-miss');
+
+      const val = (mapped.textContent||"").trim();
+      if(!val){
+        std.classList.add('map-miss'); mapped.classList.add('map-miss'); continue;
+      }
+      const ok = headerSet.has(_normalize(val));
+      if(ok){ std.classList.add('map-ok'); mapped.classList.add('map-ok'); }
+      else  { std.classList.add('map-miss'); mapped.classList.add('map-miss'); }
+    }
+  }
+
+  async function loadRawHeadersForGroup(group){
+    const raw = group.querySelector('input[name="raw_file[]"]');
+    if(!raw || !(raw.files && raw.files[0])) return;
+    const file = raw.files[0];
+    const set = await readFirstTwoRowsHeaders(file);
+    if(set){
+      group.__rawHeaderSetNormalized = set;
+      colorizeGroup(group);
+    }
+  }
+
+  function bindRawHeaderReader(group){
+    const raw = group.querySelector('input[name="raw_file[]"]');
+    if(!raw) return;
+    raw.addEventListener('change', ()=> loadRawHeadersForGroup(group));
+    // 이미 선택되어 있다면 즉시 로드
+    if(raw.files && raw.files[0]) loadRawHeadersForGroup(group);
+  }
+
+  function bindMappingHooks(group){
+    const table = group.querySelector('.header-mapping-preview');
+    const dropdown = group.querySelector('.header-mapping-dropdown');
+    if(dropdown){
+      dropdown.addEventListener('change', ()=> colorizeGroup(group));
+    }
+    // 표가 다시 그려질 때도 재색칠
+    if(table){
+      const mo = new MutationObserver(()=> colorizeGroup(group));
+      mo.observe(table, {childList:true, subtree:true});
+      group.__mapObserver = mo;
+    }
+  }
+
+  // 외부(기존 코드)에서 mappings를 주입할 수 있도록 공개 API 제공
+  window.__headerMappingColorizer = {
+    attachToGroup(group, mappings){
+      group.__mappingsCache = mappings;
+      bindMappingHooks(group);
+      colorizeGroup(group);
+    },
+    bindRawHeaderReader,
+    attemptAll(){
+      document.querySelectorAll('.file-country-group').forEach(colorizeGroup);
+    }
+  };
+
+  // 초기 로드 시 기존 그룹에 Raw 리더 바인딩
+  window.addEventListener('load', ()=>{
+    document.querySelectorAll('.file-country-group').forEach(bindRawHeaderReader);
+  });
+
+  // 요청 사항: 3초마다 자동 재확인(폴링)
+  let POLL_ID = null;
+  window.addEventListener('load', ()=>{
+    if(!POLL_ID){
+      POLL_ID = setInterval(()=>{
+        try { window.__headerMappingColorizer.attemptAll(); } catch(_){}
+      }, 3000);
+    }
+  });
+})();
+</script>
+
+<!-- 🔽🔽🔽 [교체용: Validation 진행 로그 모달 JS] 🔽🔽🔽 -->
+<script>
+// ===== 전역 상태 =====
+let currentController = null;
+let currentInterval = null;
+let lastObjectUrl = null;
+// [NEW] 에러 상세 카운트다운 타이머
+let errorCountdownTimer = null;
+
+// [INIT] 페이지 로드 시 완전 초기화 (첫 실행도 항상 깨끗하게 시작)
+function hardReset() {
+  try { if (currentController) currentController.abort(); } catch(_) {}
+  currentController = null;
+
+  if (currentInterval) {
+    clearInterval(currentInterval);
+    currentInterval = null;
+  }
+
+  if (lastObjectUrl) {
+    try { window.URL.revokeObjectURL(lastObjectUrl); } catch(_) {}
+    lastObjectUrl = null;
+  }
+
+  const modal = document.getElementById("log-modal");
+  const logOutput = document.getElementById("log-output");
+  if (modal) modal.style.display = "none";
+  if (logOutput) logOutput.textContent = "";
+
+  // [NEW] error banner reset
+  try { if (errorCountdownTimer) clearInterval(errorCountdownTimer); } catch(_) {}
+  errorCountdownTimer = null;
+  const banner = document.getElementById("error-banner");
+  const etitle = document.getElementById("error-title");
+  const emsg = document.getElementById("error-message");
+  const ecd = document.getElementById("error-countdown");
+  const expl = document.getElementById("error-explainer");
+  if (banner) banner.style.display = "none";
+  if (etitle) etitle.textContent = "❌ Validation Error";
+  if (emsg) emsg.textContent = "";
+  if (ecd) ecd.textContent = "";
+  if (expl) { expl.textContent = ""; expl.style.display = "none"; }
+  // [NEW] heading 복구
+  const h3 = document.querySelector(".log-modal-content h3");
+  if (h3) h3.textContent = "Validation in Progress...";
+
+  // [NEW-ERRCLOSE] hide close button on reset
+  const closeBtn = document.getElementById("log-modal-close");
+  if (closeBtn) closeBtn.style.display = "none";
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  hardReset(); // 첫 진입시도 초기 상태
+  // [NEW-ERRCLOSE] wire up close button (single binding)
+  const closeBtn = document.getElementById("log-modal-close");
+  if (closeBtn){
+    closeBtn.addEventListener("click", hardReset);
+  }
+});
+
+// [RESET] 실행 시작 전 상태 초기화
+function resetForNewRun() {
+  // 이전 요청/타이머/URL 정리
+  hardReset();
+
+  // 모달/로그 영역 준비
+  const modal = document.getElementById("log-modal");
+  const logOutput = document.getElementById("log-output");
+  // [NEW] hide error banner for fresh run + title 복구
+  const banner2 = document.getElementById("error-banner");
+  if (banner2) banner2.style.display = "none";
+  const h32 = document.querySelector(".log-modal-content h3");
+  if (h32) h32.textContent = "Validation in Progress...";
+
+  modal.style.display = "flex";
+  logOutput.style.display = "block"; // [ADD] show progress log at start
+  logOutput.textContent = "Initializing...\n";
+
+  // 로딩 애니메이션 시작
+  let baseText = "🔄 Validating data";
+  let dots = 0;
+  currentInterval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    logOutput.textContent = baseText + ".".repeat(dots);
+  }, 500);
+
+  // 새로운 컨트롤러 준비
+  currentController = new AbortController();
+  return { modal, logOutput };
+}
+
+/* ===== [NEW] 에러 미리보기 정리 + 컬럼명 추출 =====
+ * - 서버에서 온 HTML/텍스트를 UI에 안전하게 표시
+ * - 다양한 패턴/엔티티에서 누락 컬럼명 추출 ('' 문제 해결)
+ */
+
+// HTML 엔티티 디코딩 (간단)
+function decodeEntities(s){
+  try {
+    const t = document.createElement('textarea');
+    t.innerHTML = s;
+    return t.value;
+  } catch(_){ return s; }
+}
+
+// 태그 제거 + 공백 정리
+function stripHtml(s){
+  return s.replace(/<style[\s\S]*?<\/style>/gi,'')
+          .replace(/<script[\s\S]*?<\/script>/gi,'')
+          .replace(/<[^>]+>/g,' ')
+          .replace(/\s+/g,' ')
+          .trim();
+}
+
+// UI에 보여줄 짧은 미리보기 생성
+function sanitizeErrorPreview(raw){
+  const decoded = decodeEntities(raw || '');
+  const cleaned  = stripHtml(decoded);
+  // 첫 줄 위주로 1,000자 제한
+  return cleaned.slice(0, 1000);
+}
+
+// 다양한 문구에서 컬럼명 후보 추출
+function extractMissingColumn(raw){
+  const text = decodeEntities(raw || '');
+  const plain = stripHtml(text);
+
+  const pats = [
+    /['"]([^'"]+)['"]\s*column not found/i,                 // 'HAWB' column not found
+    /KeyError:\s*["']([^"']+)["']/i,                        // KeyError: "HAWB"
+    /Required column\s+['"]([^'"]+)['"]\s+is missing/i,     // Required column 'HAWB' is missing
+    /Missing (?:required )?column[:\s]+([A-Za-z0-9 _/#.-]+)/i
+  ];
+  for (const re of pats){
+    const m = plain.match(re);
+    if (m && m[1] && m[1].trim()) return m[1].trim();
+  }
+  return null;
+}
+
+// 기본 케이스용 태그 추출 (에러명/HTTP코드/첫행 핵심)
+function extractErrorTag(raw){
+  const preview = sanitizeErrorPreview(raw || '');
+  // 1) NamedError
+  const m1 = preview.match(/\b([A-Za-z]+Error)\b/);
+  if (m1) return m1[1];
+  // 2) HTTP code + phrase
+  const m2 = preview.match(/\b(HTTP\s*(?:\/\d\.\d\s*)?(?:\d{3})\b|\b(4\d{2}|5\d{2})\b(?:\s+[A-Za-z][A-Za-z ]+)?)?/i);
+  if (m2 && m2[0]) {
+    const code = (m2[0] || '').trim();
+    if (code) return code.replace(/\s+/g,' ');
+  }
+  // 3) "Something at /path"
+  const m3 = preview.match(/\b([A-Za-z]+Error\s+at\s+\/\S+)\b/);
+  if (m3) return m3[1];
+  return null;
+}
+
+// 첫 줄(문장) 120자 요약
+function firstLine(raw){
+  const p = sanitizeErrorPreview(raw || '');
+  const cut = p.split(/[\r\n]/)[0].trim();
+  return cut.length > 120 ? (cut.slice(0,117)+'...') : cut;
+}
+
+// [NEW] 사람 친화적 에러 요약기 (간단 패턴 매칭)
+function explainError(rawText) {
+  const preview = sanitizeErrorPreview(rawText || '');
+  const lower = preview.toLowerCase();
+
+  // 공통 유틸
+  const bullets = (...items) => `• ${items.join('\n• ')}`;
+
+  // 1) 컬럼 없음
+  if (lower.includes("column not found") || lower.includes("required column") || /keyerror/.test(lower)) {
+    const col = extractMissingColumn(rawText);
+    return {
+      title: `Required column ${col ? `'${col}' ` : ""}is missing.`,
+      hint: bullets(
+        "Check the selected header mapping group.",
+        "Confirm the uploaded raw file, HAWB Validation Source file and Hearder mapping file contains the required header.",
+        "If your file has double headers, verify the merged header names."
+      )
+    };
+  }
+
+  // 2) Excel busy/COM
+  if (lower.includes("rpc_e_call_rejected") || lower.includes("excel busy")) {
+    return {
+      title: "Excel is busy or locked by another process.",
+      hint: bullets(
+        "Close any open Excel windows and try again.",
+        "On servers, terminate orphaned Excel processes."
+      )
+    };
+  }
+
+  // 3) Permission / file lock
+  if (lower.includes("permission denied") || lower.includes("in use") || lower.includes("access is denied") || lower.includes("errno 13")) {
+    return {
+      title: "File permission or lock issue.",
+      hint: bullets(
+        "Close the file in Excel/Explorer.",
+        "Ensure write permission to uploads/outputs folders."
+      )
+    };
+  }
+
+  // 4) Payload too large
+  if (lower.includes("request entity too large") || /\b413\b/.test(lower)) {
+    return {
+      title: "Upload size exceeded the server limit.",
+      hint: bullets(
+        "Split the file or increase the server upload limit."
+      )
+    };
+  }
+
+  // 5) JSON/parse
+  if (lower.includes("jsondecodeerror") || lower.includes("expecting value") || lower.includes("invalid json")) {
+    return {
+      title: "Invalid JSON format.",
+      hint: bullets(
+        "Check pipeline/step JSON files for commas and quotes."
+      )
+    };
+  }
+
+  // 6) Werkzeug debugger/traceback 감지
+  if (lower.includes("werkzeug debugger") || lower.includes("traceback")) {
+    return {
+      title: "A server-side error occurred.",
+      hint: bullets(
+        "The server returned a traceback page.",
+        "Share the detailed page with the support team."
+      )
+    };
+  }
+
+  // 7) Default — ★ 동적 꼬리표 + 첫 문장 요약 포함
+  const tag = extractErrorTag(rawText);
+  const headline = tag ? `Unexpected error: ${tag}` : "An unexpected error occurred.";
+  const line = firstLine(rawText);
+  const more = line ? `Context: ${line}` : "";
+  return {
+    title: headline,
+    hint: bullets(
+      "Retry once.",
+      "If it persists, open the detailed page and share it with the support team.",
+      more
+    )
+  };
+}
+
+// [REPLACE] fetchWithOneSilentRetry (서버 에러 본문을 받아서 띄우기 + 1회 무소음 재시도)
+async function fetchWithOneSilentRetry(url, opts, isBlob = false) {
+  async function _handleResponse(res) {
+    if (res.ok) {
+      return isBlob ? await res.blob() : await res.text();
+    }
+    // 서버가 준 에러 본문을 읽어 메시지/상세 URL 구성
+    const ctype = res.headers.get("content-type") || "text/plain";
+    const text = await res.text().catch(() => "");
+    const blob = new Blob([text || `${res.status} ${res.statusText || ""}`], { type: ctype });
+    const detailUrl = URL.createObjectURL(blob);
+
+    // 미리보기는 sanitize 해서 저장 (디버거 HTML 숨김)
+    const preview = sanitizeErrorPreview(text || `${res.status} ${res.statusText || ""}`);
+    const err = new Error(preview || "Upload failed");
+    err.detailUrl = detailUrl;           // 상세 보기용 URL
+    err.status = res.status;
+    err.contentType = ctype;
+    err.rawText = text || "";            // 원본문 (설명기용)
+    throw err;
+  }
+
+  try {
+    const res = await fetch(url, opts);
+    return await _handleResponse(res);
+  } catch (err) {
+    const msg = String(err?.message || "");
+    // 네트워크/일시적 오류만 1회 무소음 재시도
+    if (msg.includes("Failed to fetch") || err.name === "TypeError") {
+      try { if (currentController) currentController.abort(); } catch(_) {}
+      currentController = new AbortController();
+      const retryOpts = { ...opts, signal: currentController.signal };
+      // 약간의 짧은 대기 후 재시도 (커넥션 정리 시간)
+      await new Promise(r => setTimeout(r, 250));
+      const res2 = await fetch(url, retryOpts);
+      return await _handleResponse(res2);
+    }
+    throw err;
+  }
+}
+
+// ===== 제출 핸들러 =====
+document.getElementById("upload-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  // 실행 시작 직전 무조건 초기화
+  const { modal, logOutput } = resetForNewRun();
+
+  // 중복 제출 방지: 버튼 비활성화
+  const submitBtn = this.querySelector('button[type="submit"]');
+  const restoreBtn = () => { try { submitBtn.disabled = false; } catch(_) {} };
+  try { submitBtn.disabled = true; } catch(_) {}
+
+  const formData = new FormData(this);
+
+  try {
+  // 서버 응답(Response) 자체를 받아서 Content-Disposition에서 파일명 추출
+  const res = await fetch("/upload", {
+    method: "POST",
+    body: formData,
+    signal: currentController.signal
+  });
+
+  // 비정상 응답은 기존 에러 UI 흐름을 재사용하기 위해 예외로 전환
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const err = new Error(text || `${res.status} ${res.statusText || ""}`);
+    err.rawText = text;
+    throw err;
+  }
+
+// 1) 헤더에서 파일명 추출
+const disp = res.headers.get("Content-Disposition") || "";
+let filename = "validated_result.xlsx"; // fallback
+const matchStar  = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disp);
+const matchBasic = /filename="?([^"]+)"?/i.exec(disp);
+if (matchStar) {
+  try { filename = decodeURIComponent(matchStar[1]); } catch (_) { filename = matchStar[1]; }
+} else if (matchBasic) {
+  filename = matchBasic[1];
+}
+// (추가 방어) 따옴표/공백/슬래시 제거 + 확장자 보정
+filename = (filename || "").replace(/^["']|["']$/g,"").trim().replace(/[\/\\]/g,"_");
+if (!/\.(xlsx)$/i.test(filename)) filename += ".xlsx";
+
+// 2) Blob 생성 후 저장 (단일 클릭만!)
+const blob = await res.blob();
+const url  = window.URL.createObjectURL(blob);
+lastObjectUrl = url;
+
+const a = document.createElement("a");
+a.style.display = "none";
+a.href = url;
+a.setAttribute("download", filename);
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+    // 애니메이션/컨트롤러 정리
+    if (currentInterval) { clearInterval(currentInterval); currentInterval = null; }
+    currentController = null;
+
+    logOutput.textContent = "✅ Validation Completed Successfully!";
+    setTimeout(() => {
+      try { if (lastObjectUrl) { window.URL.revokeObjectURL(lastObjectUrl); lastObjectUrl = null; } } catch(_) {}
+      modal.style.display = "none"; // 성공: 짧은 지연(1.2초) 후 닫힘 (기존 동작 보존)
+    }, 1200);
+  } catch (err) {
+    // 애니메이션/컨트롤러 정리
+    if (currentInterval) { clearInterval(currentInterval); currentInterval = null; }
+    currentController = null;
+
+    // Abort는 조용히 닫기
+    if (err?.name === "AbortError") {
+      modal.style.display = "none";
+      restoreBtn();
+      return;
+    }
+
+    // [NEW] 에러 배너 표시 + 제목 교체
+    const banner = document.getElementById("error-banner");
+    const etitle = document.getElementById("error-title");
+    const emsg = document.getElementById("error-message");
+    const ecd = document.getElementById("error-countdown");
+    const expl = document.getElementById("error-explainer");
+    const h3 = document.querySelector(".log-modal-content h3");
+
+    if (banner) banner.style.display = "block";
+    if (h3) h3.textContent = "An error occurred";
+    if (etitle) etitle.textContent = "❌ Validation Error";
+
+    // 모달 본문엔 정리된 미리보기만 (UI 가벼움 유지)
+    // const previewMsg = (err?.message || "Unknown error").toString();                 // [DISABLED]
+    // if (emsg) emsg.textContent = previewMsg.slice(0, 1200);                         // [DISABLED]
+
+    const progressEl = document.getElementById("log-output"); // [ADD]
+    if (progressEl) progressEl.style.display = "none";         // [ADD] hide progress log on error
+
+
+    // [NEW] 친화적 요약 표시 (원본문 기반으로 분석)
+    const { title, hint } = explainError(err?.rawText || err?.message || "");
+    if (expl) {
+      expl.style.display = "block";
+      expl.innerHTML = `<strong>${title}</strong><br>${hint.replace(/\n/g,'<br>')}`;
+    }
+
+    // [CHANGED] Do not auto-redirect or countdown; keep the modal open.
+    try { if (errorCountdownTimer) clearInterval(errorCountdownTimer); } catch(_) {}
+    errorCountdownTimer = null;
+    if (ecd) ecd.textContent = "";
+    // (Optional) Provide a manual link for users to open the detailed page themselves:
+    // if (err?.detailUrl && ecd) { ecd.innerHTML = `<a href="${err.detailUrl}" target="_blank" rel="noopener">Open detailed error page</a>`; }
+
+    // [NEW-ERRCLOSE] show the close button so user can dismiss the modal
+    const closeBtn = document.getElementById("log-modal-close");
+    if (closeBtn) closeBtn.style.display = "inline-flex";
+
+    // (참고) 에러 케이스에서는 자동 이동 전까지 모달을 유지해 사용자가 내용을 확인할 시간 확보
+  } finally {
+    restoreBtn();
+  }
+});
+</script>
+<!-- 🔼🔼🔼 [교체 끝] 🔼🔼🔼 -->
+</html>

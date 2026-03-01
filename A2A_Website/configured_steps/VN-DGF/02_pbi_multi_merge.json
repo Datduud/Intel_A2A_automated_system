@@ -1,0 +1,49 @@
+{
+  "step": "pbi_multi_merge",
+  "conditions": {
+    "sources": [
+      {
+        "alias": "PBI",
+        "sheet": "IntelOpsReportMainALL",
+        "left_key": "HAWB",
+        "right_key": "NFG_List[HAWB/BOL]",
+        "cols": "NFG_List[HAWB/BOL]",
+        "filter_col": "",
+        "filter_op": "startswith",
+        "filter_val": ""
+      },
+      {
+        "alias": "FG",
+        "sheet": "SharePointSourceA2AHAWBLo",
+        "left_key": "HAWB",
+        "right_key": "FG_WD_CAPITAL[ORDER_RELEASE_XID]",
+        "cols": "FG_WD_CAPITAL[ORDER_RELEASE_XID]",
+        "filter_col": "FG_WD_CAPITAL[COMMODITY]",
+        "filter_op": "equals",
+        "filter_val": "FG"
+      },
+      {
+        "alias": "WD",
+        "sheet": "SharePointSourceA2AHAWBLo",
+        "left_key": "HAWB",
+        "right_key": "FG_WD_CAPITAL[ORDER_RELEASE_XID]",
+        "cols": "FG_WD_CAPITAL[ORDER_RELEASE_XID]",
+        "filter_col": "FG_WD_CAPITAL[COMMODITY]",
+        "filter_op": "equals",
+        "filter_val": "WD"
+      }
+    ],
+    "rename_map": [
+      {
+        "old": "",
+        "new": ""
+      }
+    ],
+    "post_rules": [
+      {
+        "when": "",
+        "set": ""
+      }
+    ]
+  }
+}

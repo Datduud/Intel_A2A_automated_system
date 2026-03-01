@@ -1,0 +1,41 @@
+{
+  "step": "remarks_update",
+  "conditions": {
+    "rules": [
+      {
+        "target_value": "Out of scope",
+        "conditions": [
+          {
+            "column": "Carrier",
+            "operator": "not_in",
+            "values": [
+              "CNW",
+              "FEDEX",
+              "EXPEDITORS",
+              "DHLE",
+              "KUEHNE+NAGEL",
+              "UPS",
+              "NNR",
+              "DGF",
+              "NIPPON",
+              "NIPPON EXPRE",
+              "VENDOR"
+            ]
+          }
+        ]
+      },
+      {
+        "target_value": "Internal Trucking",
+        "conditions": [
+          {
+            "column": "Carrier",
+            "operator": "equals",
+            "values": [
+              "VENDOR"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "step": "unique_hawb",
+  "conditions": {
+    "column": "HAWB"
+  }
+}

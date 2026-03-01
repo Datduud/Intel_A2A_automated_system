@@ -1,0 +1,10 @@
+{
+  "id": "kpi_calculation",
+  "label": "Calculate KPI columns ­– PBI Count, Failed Orders, and On-time Percentage",
+  "inputs": [
+    { "type": "text", "name": "in_pbi_column", "label": "Column that tells whether an order exists in PBI (e.g. “In PBI” for China/Costa Rica, “PBI” for Malaysia/Vietnam)", "options_from": "mapped_headers", "default": "In PBI" },
+    { "type": "text",   "name": "in_pbi_yes_value", "label": "Exact cell value that means “Yes, this order is in Power BI” (for example Yes, Y, or TRUE)", "default": "Yes" },
+    { "type": "text", "name": "total_order_col",  "label": "Column holding the total number of orders this row represents (usually called “Total Order”)", "options_from": "mapped_headers", "allow_blank": true },
+    { "type": "number", "name": "precision", "label": "How many decimal places to show for the On-time % result", "default": 2 }
+  ]
+}

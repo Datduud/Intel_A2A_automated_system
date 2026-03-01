@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pipeline Manager</title>
+  <style>
+    :root{
+      --brand:#0f62fe;
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --pill:#eef2ff;
+      --accent:#111827;
+    }
+    *{box-sizing:border-box}
+    body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); margin:0; color:#111}
+    nav{background:var(--brand); color:#fff; padding:12px 20px; display:flex; align-items:center}
+    nav a{color:#fff; text-decoration:none; opacity:.95}
+    nav a:hover{opacity:1}
+    nav .title{font-weight:700}
+    .wrap{max-width:1200px; margin:24px auto; padding:0 16px}
+    .controls{display:flex; gap:12px; align-items:center; margin: 0 0 16px; flex-wrap:wrap}
+    label{display:flex; gap:8px; align-items:center}
+    select,input,button,textarea{font:inherit}
+    select,input{border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:#fff}
+    button{background:var(--brand); color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer}
+    button.secondary{background:#374151}
+    button.ghost{background:transparent; color:var(--brand); border:1px solid var(--brand)}
+    button:disabled{opacity:.5; cursor:not-allowed}
+    .grid{border:1px solid var(--border); border-radius:12px; background:var(--card); overflow:hidden}
+    .row{display:grid; grid-template-columns:36px 120px 1fr 300px 180px; gap:10px; align-items:center; padding:10px 12px; border-top:1px solid var(--border)}
+    .row.header{background:#f3f4f6; font-weight:600; position:sticky; top:0; z-index:1}
+    .row:first-child{border-top:none}
+    .handle{cursor:grab; user-select:none; color:#9ca3af; font-weight:700; text-align:center}
+    .file{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    .muted{color:var(--muted); font-size:12px}
+    .right{display:flex; gap:8px; justify-content:flex-end}
+    .pill{display:inline-block; padding:2px 8px; border-radius:12px; background:var(--pill); font-size:12px; color:#3730a3}
+    .footer{display:flex; justify-content:flex-end; gap:8px; margin-top:12px}
+    /* Modal */
+    .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center}
+    .modal{width:min(920px, 92vw); background:#fff; border-radius:12px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .modal header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+    .section{border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:10px; background:#fff}
+    .row-mini{display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:6px}
+    .kv{display:grid; grid-template-columns:220px 1fr; gap:8px; align-items:center; margin:6px 0}
+    .chip{display:inline-block; border:1px dashed var(--border); padding:6px 10px; border-radius:10px; background:#fafafa}
+    .danger{color:#b91c1c}
+/* 항상 화면 최상단 레이어 */
+.modal-backdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.35);
+  display:none;
+  align-items:center;           /* 초기 중앙정렬 */
+  justify-content:center;       /* 초기 중앙정렬 */
+  z-index: 9999;                /* 리스트 헤더(z-index:1)보다 위 */
+}
+
+/* 초기엔 정확히 중앙. 드래그 모드에선 수직만 직접 제어 */
+.modal{
+  position:absolute;            /* 드래그를 위해 absolute */
+  left:50%; top:50%;
+  transform: translate(-50%, -50%); /* 초기 중앙 위치 */
+  width:min(920px, 92vw);
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+  max-height:92vh;
+  overflow:auto;                /* 내용 스크롤 */
+}
+
+.modal header{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:8px;
+  cursor:move;                  /* 드래그 핸들 */
+  user-select:none; -webkit-user-select:none;
+}
+
+/* 드래그 시작 시 수직 중앙 해제(translateY 제거) */
+.modal.drag-mode{
+  transform: translateX(-50%);
+}
+/* ===== DHL theme add-ons (non-breaking) ===== */
+:root{
+  --dhl-yellow:#FFCC00;
+  --dhl-red:#D40511;
+  --dhl-dark:#333;
+
+  /* 기존 변수 덮어써서 DHL 느낌 부여 (배경은 은은한 연노랑) */
+  --brand: var(--dhl-red);
+  --bg: #fff7e3;
+  --pill:#fff3c2;
+}
+
+/* 상단 네비 색/호버는 기존 로직 유지(brand 사용) */
+
+/* 버튼, Pill, 강조 */
+button{ box-shadow:0 2px 8px rgba(212,5,17,.10); }
+.pill{ background:var(--pill); color:#7a4b00; border:1px solid #f0d98a; }
+
+/* ===== Write mode segmented toggle (편집 모달에서 사용) ===== */
+.write-mode {
+  display:flex; align-items:center; gap:12px;
+  padding:10px; margin:8px 0 4px;
+  background:#fffdf3; border:1.5px solid #f0d98a; border-radius:10px;
+}
+.write-mode__title { font-weight:800; color: var(--dhl-red); }
+.write-mode__hint  { font-size:12px; color:#666; margin-left:auto; }
+
+.segmented {
+  display:inline-grid; grid-auto-flow:column; gap:6px; align-items:center;
+}
+.segmented input[type="radio"] { display:none; }
+.segmented label {
+  padding:8px 12px; border:1.5px solid #f0d98a; border-radius:8px;
+  background:#fff3c2; color:var(--dhl-red);
+  font-weight:700; cursor:pointer; user-select:none; transition:all .15s;
+}
+.segmented input[type="radio"]:checked + label {
+  background: var(--dhl-red); color:#fff; border-color: var(--dhl-red);
+}
+
+/* 모달을 좀 더 DHL 느낌으로 */
+.modal{ border:1.5px solid #ffe39a; }
+.modal header .muted{ color:#7a4b00; }
+      :root {
+        --dhl-yellow: #FFCC00;
+        --dhl-red: #D40511;
+        --dhl-dark: #333;
+      }
+
+/* NAV (공통) */
+      :root {
+        --dhl-yellow: #FFCC00;
+        --dhl-red: #D40511;
+        --dhl-dark: #333;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        background: var(--dhl-yellow);
+        min-height: 100vh;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      nav {
+        background: var(--dhl-red);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        height: 60px;
+        font-weight: bold;
+        font-size: 1.1em;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px 0 rgba(50,0,0,0.07);
+      }
+      nav .logo {
+        font-size: 1.3em;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        color: var(--dhl-yellow);
+        margin-right: 30px;
+        text-transform: uppercase;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        margin-right: 18px;
+        transition: color 0.15s;
+        padding: 6px 10px;
+        border-radius: 4px;
+      }
+      nav a:hover, nav a:focus {
+        color: var(--dhl-yellow);
+        background: rgba(255,255,255,0.10);
+      }
+/* ===== pbi_multi_merge Editor – lightweight styling ===== */
+.source-card{
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  margin-top:10px;
+  background:#fffdf3;
+}
+.source-card .row-mini{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:8px;
+  align-items:center;
+  margin-top:8px;
+}
+.source-card .meta{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-top:6px;
+}
+.source-card .filter{
+  border:1px dashed #e5e7eb;
+  border-radius:8px;
+  padding:8px;
+  margin-top:8px;
+  background:#fff;
+}
+.section .subhead{
+  font-weight:600; margin-top:6px; color:#374151;
+}
+.kv-inline{
+  display:grid; grid-template-columns:220px 1fr; gap:8px; align-items:center;
+}
+.pills{
+  display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;
+}
+.pills .chip{
+  display:inline-flex; align-items:center; gap:6px;
+  border:1px dashed var(--border); padding:6px 8px; border-radius:10px;
+  background:#fafafa;
+}
+
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="logo">Viko A2A</span>
+    <a href="/">Upload</a>
+    <a href="/pipelines">Country Manager</a>
+    <a href="/pipeline-manager">Pipeline Manager</a>
+    <!-- <a href="/combine">File Combiner</a> -->
+  </nav>
+
+
+  <div class="wrap">
+    <div class="controls">
+      <label>Country <select id="country"></select></label>
+      <button id="reload" class="secondary">Reload</button>
+      <span id="status" class="muted"></span>
+    </div>
+
+    <div id="list" class="grid">
+      <div class="row header">
+        <div></div>
+        <div>Order</div>
+        <div>File</div>
+        <div>Step / Meta</div>
+        <div class="right">Actions</div>
+      </div>
+      <!-- rows here -->
+    </div>
+
+    <div class="footer">
+      <button id="renumber" class="ghost">Auto Renumber (01..)</button>
+      <button id="saveOrder">Save Order</button>
+    </div>
+  </div>
+
+  <!-- 폼 전용 모달 -->
+  <div class="modal-backdrop" id="modalBg">
+    <div class="modal">
+      <header>
+        <div>
+          <div id="modalTitle" style="font-weight:700"></div>
+          <div id="modalSubtitle" class="muted"></div>
+        </div>
+        <button id="closeModal" class="ghost">Close</button>
+      </header>
+      <div id="formHost"></div>
+      <div class="footer">
+        <button id="saveForm">Save</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+let rows = [];       // [{file, order, step, size, mtime}, ...]
+let dragIndex = null;
+
+function fmtBytes(n){ if(n<1024) return n+' B'; let u=['KB','MB','GB']; let i=-1; do{ n/=1024; i++; }while(n>=1024&&i<u.length-1); return n.toFixed(1)+' '+u[i]; }
+function fmtTime(ts){ try{ return new Date(ts*1000).toLocaleString(); } catch(e){ return '' } }
+async function fetchJson(url, opts){
+  const res = await fetch(url, opts);
+  if(!res.ok){
+    const t = await res.text().catch(()=>String(res.status));
+    throw new Error(`HTTP ${res.status}: ${t.slice(0,200)}`);
+  }
+  return res.json();
+}
+function initModalDrag(){
+  const bg = document.getElementById('modalBg');
+  const modal = bg.querySelector('.modal');
+  const header = modal.querySelector('header');
+
+  let dragging=false, startY=0, startTop=0;
+
+  function clampTop(t){
+    const margin = 8;
+    const maxTop = window.innerHeight - modal.offsetHeight - margin;
+    return Math.min(Math.max(margin, t), Math.max(margin, maxTop));
+  }
+
+  function center(){
+    // 초기 정확한 중앙(콘텐츠 높이 반영)
+    modal.classList.remove('drag-mode');
+    modal.style.left = '50%';
+    modal.style.top  = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+  }
+
+  function onDown(e){
+    // 버튼 위에서 시작하면 드래그 무시
+    if (e.target.closest('button')) return;
+    const pointY = (e.touches?.[0]?.clientY) ?? e.clientY;
+
+    // 현재 렌더된 실제 위치를 px 기준으로 가져온 뒤 drag-mode 진입
+    const rect = modal.getBoundingClientRect();
+    modal.classList.add('drag-mode');
+    modal.style.top  = rect.top + 'px';      // translateY 제거 후 기준 고정
+    modal.style.left = '50%';
+    modal.style.transform = 'translateX(-50%)';
+
+    dragging = true;
+    startY = pointY;
+    startTop = rect.top;
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+  }
+
+  function onMove(e){
+    if(!dragging) return;
+    const pointY = (e.touches?.[0]?.clientY) ?? e.clientY;
+    if (e.cancelable) e.preventDefault();
+    const dy = pointY - startY;
+    modal.style.top = clampTop(startTop + dy) + 'px';
+  }
+
+  function onUp(){
+    dragging=false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+
+  header.addEventListener('mousedown', onDown);
+  header.addEventListener('touchstart', onDown, {passive:false});
+
+  // 창 크기 바뀌면 다시 중앙으로(사용자 드래그를 존중하려면 주석)
+  window.addEventListener('resize', () => {
+    if (!dragging) center();
+  });
+
+  return { center };
+}
+
+/* Countries */
+async function loadCountries(){
+  try{
+    const data = await fetchJson('/pipelines/countries');
+    const sel = $('#country'); sel.innerHTML = '';
+    (data.countries || []).forEach(c => {
+      const o = document.createElement('option'); o.value = o.textContent = c; sel.appendChild(o);
+    });
+  }catch(e){ console.error(e); alert('Failed to load countries'); }
+}
+
+/* List */
+async function loadList(){
+  const c = $('#country').value; if(!c) return;
+  $('#status').textContent = 'Loading...';
+  try{
+    const data = await fetchJson(`/pipelines/list?country=${encodeURIComponent(c)}`);
+    rows = data.items || [];
+    renderList();
+    $('#status').textContent = `${rows.length} step(s)`;
+  }catch(e){
+    console.error(e); $('#status').textContent = 'Error'; alert('Failed to load list');
+  }
+}
+
+function renderList(){
+  const host = $('#list');
+  host.querySelectorAll('.row:not(.header)').forEach(el => el.remove());
+
+  rows.forEach((r, idx) => {
+    const row = document.createElement('div');
+    row.className = 'row'; row.draggable = true; row.dataset.index = idx;
+
+    const h = document.createElement('div'); h.className='handle'; h.textContent='≡'; row.appendChild(h);
+
+    const ord = document.createElement('input'); ord.type='number'; ord.placeholder='—';
+    ord.value = (r.order ?? ''); ord.style.width='100%';
+    ord.onchange = e => rows[idx].order = (e.target.value === '' ? null : Number(e.target.value));
+    row.appendChild(ord);
+
+    const file = document.createElement('div'); file.className='file'; file.textContent=r.file; row.appendChild(file);
+
+    const meta = document.createElement('div');
+    const pill = document.createElement('span'); pill.className='pill'; pill.textContent = r.step || '(unknown step)';
+    const info = document.createElement('span'); info.className='muted'; info.style.marginLeft='8px';
+    info.textContent = `${fmtBytes(r.size)} • ${fmtTime(r.mtime)}`;
+    meta.appendChild(pill); meta.appendChild(info); row.appendChild(meta);
+
+    const actions = document.createElement('div'); actions.className='right';
+    const edit = document.createElement('button'); edit.textContent='Edit';
+    edit.onclick = () => openFormEditor(idx);
+    const del  = document.createElement('button'); del.textContent='Delete'; del.className='secondary';
+    del.onclick = () => doDelete(idx);
+    actions.appendChild(edit); actions.appendChild(del); row.appendChild(actions);
+
+    row.addEventListener('dragstart', e => { dragIndex = idx; e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+    row.addEventListener('drop', e => {
+      e.preventDefault(); if(dragIndex===null) return;
+      const to = Number(row.dataset.index);
+      if(to === dragIndex) return;
+      const [x] = rows.splice(dragIndex,1);
+      rows.splice(to,0,x);
+      dragIndex = null;
+      renderList();
+    });
+
+    host.appendChild(row);
+  });
+}
+
+/* Delete */
+async function doDelete(idx){
+  const c = $('#country').value;
+  const f = rows[idx].file;
+  if(!confirm(`Delete ${f}?`)) return;
+  try{
+    await fetchJson('/pipelines/delete', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ country:c, file:f })
+    });
+    rows.splice(idx,1); renderList();
+  }catch(e){ console.error(e); alert('Delete failed'); }
+}
+
+/* ---------- 폼 에디터 ---------- */
+
+function clearHost(){
+  const host = $('#formHost'); host.innerHTML='';
+  return host;
+}
+function kvRow(label, inputEl){
+  const line = document.createElement('div'); line.className='kv';
+  const left = document.createElement('div'); left.textContent=label; left.className='muted';
+  const right= document.createElement('div'); right.appendChild(inputEl);
+  line.appendChild(left); line.appendChild(right);
+  return line;
+}
+function textInput(v='', ph=''){ const i=document.createElement('input'); i.type='text'; i.value=v??''; i.placeholder=ph||''; i.style.width='100%'; return i; }
+function numInput(v){ const i=document.createElement('input'); i.type='number'; if(v!==undefined&&v!==null&&v!=='') i.value=v; i.style.width='100%'; return i; }
+function boolInput(v){ const i=document.createElement('input'); i.type='checkbox'; i.checked=!!v; return i; }
+function textareaLines(v=''){ const t=document.createElement('textarea'); t.value=(Array.isArray(v)?v.join('\n'): (v??'')); t.rows=5; t.style.width='100%'; return t; }
+function smallJsonArea(obj){ const t=document.createElement('textarea'); t.value=JSON.stringify(obj??{}, null, 2); t.rows=6; t.style.width='100%'; t.className='chip'; return t; }
+
+/* remarks_update 전용 */
+/* remarks_update 전용 — 정식 JSON 포맷 전용 빌더
+   출력: { conditions: { rules: [ {target_value, conditions:[...], (optional)target_column }, ... ] } }
+*/
+/* remarks_update 전용 — 정식 JSON 포맷 전용 빌더
+   출력: { conditions: { append_mode: boolean, rules: [ ... ] } }
+   - 기존 rules UI 유지
+   - Write mode (Append/Replace) 토글을 상단에 추가하고,
+     기존 conditions.append_mode 값을 로드/저장
+*/
+function buildRemarksEditor(existing){
+  const host = (function clearHost(){
+    const h = $('#formHost'); h.innerHTML=''; return h;
+  })();
+
+  // === 유틸: 값 토큰 숫자/문자 자동 판별 ===
+  function parseScalar(tok){
+    const t = String(tok ?? '').trim();
+    if (!t) return "";
+    if (/^-?\d+(\.\d+)?$/.test(t)) {
+      const n = Number(t);
+      if (Number.isFinite(n)) return n;
+    }
+    return t;
+  }
+  function parseValues(raw){
+    return String(raw || '')
+      .split('|')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(parseScalar);
+  }
+
+  // === 래퍼 섹션 ===
+  const box  = document.createElement('div'); box.className='section';
+  const head = document.createElement('div'); head.textContent='remarks_update — Rule Builder'; head.style.fontWeight='700';
+  box.appendChild(head);
+
+  // === NEW: Write mode (Append/Replace) ===
+  const appendDefault = (typeof existing?.append_mode === 'boolean') ? !!existing.append_mode : true;
+
+  const wm = document.createElement('div');
+  wm.className = 'write-mode';
+  wm.innerHTML = `
+    <div class="write-mode__title">Write mode</div>
+    <div class="segmented">
+      <input type="radio" id="wm-append" name="rb-write-mode-edit" value="append" ${appendDefault ? 'checked' : ''}>
+      <label for="wm-append">Append</label>
+
+      <input type="radio" id="wm-replace" name="rb-write-mode-edit" value="replace" ${appendDefault ? '' : 'checked'}>
+      <label for="wm-replace">Replace</label>
+    </div>
+    <div class="write-mode__hint">Append: 기존 값 뒤에 추가 · Replace: 값을 덮어쓰기</div>
+  `;
+  box.appendChild(wm);
+
+  // === 규칙 영역 ===
+  const rulesWrap = document.createElement('div'); rulesWrap.className='section';
+  const rulesHd   = document.createElement('div'); rulesHd.textContent='Rules'; rulesHd.style.fontWeight='600';
+  rulesWrap.appendChild(rulesHd);
+
+  const addRuleBtn = document.createElement('button');
+  addRuleBtn.type='button'; addRuleBtn.textContent='+ Add Rule';
+  addRuleBtn.className='secondary'; addRuleBtn.style.marginTop='6px';
+
+  function condRow(init={column:'', operator:'equals', values:[]}){
+    const r = document.createElement('div');
+    r.className='row-mini'; r.style.marginTop='6px';
+
+    // Column
+    const col = (() => {
+      const i=document.createElement('input'); i.type='text';
+      i.value = init.column || ''; i.placeholder='Column'; i.style.width='100%'; return i;
+    })();
+
+    // Operator
+    const op  = (() => {
+      const s=document.createElement('select');
+      ['is_blank','is_not_blank','equals','not_equals','in','not_in','contains','not_contains','starts_with','not_starts_with']
+        .forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; s.appendChild(opt); });
+      s.value = init.operator || 'equals';
+      return s;
+    })();
+
+    // Values
+    const vals = (() => {
+      const i=document.createElement('input'); i.type='text';
+      i.value = (init.values||[]).join(' | ');
+      i.placeholder = "Value(s) split by ' | '"; i.style.width='100%'; return i;
+    })();
+
+    // is_blank / is_not_blank 이면 values 숨김
+    function toggleVals(){
+      const need = !['is_blank','is_not_blank'].includes(op.value);
+      vals.style.display = need ? 'block' : 'none';
+    }
+    op.addEventListener('change', toggleVals); toggleVals();
+
+    // Remove
+    const rm = document.createElement('button'); rm.type='button';
+    rm.textContent='–'; rm.className='secondary'; rm.onclick=()=>r.remove();
+
+    r.appendChild(col); r.appendChild(op); r.appendChild(vals); r.appendChild(rm);
+    return r;
+  }
+
+  function ruleBox(init={ target_value:'', /* optional */ target_column:'', conditions:[{column:'',operator:'equals',values:[]}] }){
+    const wrap = document.createElement('div'); wrap.className='section'; wrap.style.background='#fafafa';
+
+    // (optional) target_column
+    const tgtCol = (() => {
+      const i=document.createElement('input'); i.type='text';
+      i.value = init.target_column || '';
+      i.placeholder='(optional) Target Column — omit to write Remarks';
+      i.style.width='100%'; return i;
+    })();
+
+    // target_value
+    const tv = (() => {
+      const i=document.createElement('input'); i.type='text';
+      i.value = init.target_value || ''; i.placeholder='Target value, e.g. CNW';
+      i.style.width='100%'; return i;
+    })();
+
+    // label + controls
+    const kv = (label, el) => {
+      const line = document.createElement('div'); line.className='kv';
+      const left = document.createElement('div'); left.textContent=label; left.className='muted';
+      const right= document.createElement('div'); right.appendChild(el);
+      line.appendChild(left); line.appendChild(right);
+      return line;
+    };
+    wrap.appendChild(kv('Target Column (optional)', tgtCol));
+    wrap.appendChild(kv('Target Value', tv));
+
+    // conditions
+    const condHost = document.createElement('div');
+    (init.conditions||[]).forEach(c=> condHost.appendChild(condRow(c)));
+    if(!(init.conditions||[]).length) condHost.appendChild(condRow());
+    wrap.appendChild(condHost);
+
+    const btns=document.createElement('div'); btns.style.marginTop='6px';
+    const addC=document.createElement('button'); addC.type='button'; addC.textContent='+ Cond'; addC.className='secondary';
+    const rmR=document.createElement('button'); rmR.type='button'; rmR.textContent='– Remove Rule'; rmR.className='secondary'; rmR.style.marginLeft='8px';
+    addC.onclick=()=>condHost.appendChild(condRow());
+    rmR.onclick=()=>wrap.remove();
+    btns.appendChild(addC); btns.appendChild(rmR); wrap.appendChild(btns);
+
+    return {
+      wrap,
+      get(){
+        const cs=[];
+        condHost.querySelectorAll('.row-mini').forEach(row=>{
+          const [cCol, cOp, cVals] = row.querySelectorAll('input, select');
+          const op = cOp.value;
+          const values = ['is_blank','is_not_blank'].includes(op)
+            ? []
+            : parseValues(cVals.value || '');
+          cs.push({ column: cCol.value.trim(), operator: op, values });
+        });
+        const rule = { target_value: tv.value.trim(), conditions: cs };
+        if (tgtCol.value.trim()) rule.target_column = tgtCol.value.trim();
+        return rule;
+      }
+    };
+  }
+
+  const ruleAPIs=[];
+  (existing?.rules||[]).forEach(r=>{
+    const item = ruleBox(r);
+    ruleAPIs.push(item);
+    rulesWrap.appendChild(item.wrap);
+  });
+  if(!(existing?.rules||[]).length){
+    const item = ruleBox();
+    ruleAPIs.push(item);
+    rulesWrap.appendChild(item.wrap);
+  }
+
+  box.appendChild(rulesWrap);
+  box.appendChild(addRuleBtn);
+  host.appendChild(box);
+
+  addRuleBtn.onclick=()=>{
+    const item = ruleBox();
+    ruleAPIs.push(item);
+    rulesWrap.appendChild(item.wrap);
+  };
+
+  // ▶ 반환: conditions 객체(append_mode 포함)
+  return {
+    getValue(){
+      const mode = document.querySelector('input[name="rb-write-mode-edit"]:checked')?.value || 'append';
+      return {
+        append_mode: (mode === 'append'),   // 서버는 이 값만 보면 됨(구분자는 서버 기본 "/")
+        rules      : ruleAPIs.map(api => api.get())
+      };
+    }
+  };
+}
+
+/* pbi_multi_merge 전용 — 비개발자용 빌더
+   출력 conditions 포맷:
+   {
+     main_hawb_column?: "HAWB",
+     debug_merge?: true/false,
+     sources: [
+       { alias, sheet, left_key, right_key, cols, filter_col?, filter_op?, filter_val? },
+       ...
+     ],
+     rename_map?: [ {old, new}, ... ]   // 필요시
+   }
+*/
+/* pbi_multi_merge 전용 — 심플 에디터 (Options 제거판)
+   저장 포맷:
+   {
+     // (기존에 있던 main_hawb_column, debug_merge 등은 보존됨)
+     sources: [
+       { alias, sheet, left_key?, right_key, cols, filter_col?, filter_op?, filter_val? },
+       ...
+     ],
+     rename_map?: [ {old, new}, ... ]
+   }
+*/
+function buildPbiMergeEditor(existing){
+  const host = (function clearHost(){
+    const h = $('#formHost'); h.innerHTML = ''; return h;
+  })();
+
+  // 제안 리스트 (datalist)
+  const HEADER_SUGGEST = ["HAWB","UPS Trk","MASTER AWB","ORDER_RELEASE_XID","PO #","Forwarder Waybill Number"];
+  const FILTER_OPTS = ["equals","startswith","contains"];
+  function datalist(id, items){
+    let dl = document.getElementById(id);
+    if(!dl){ dl = document.createElement('datalist'); dl.id = id; document.body.appendChild(dl); }
+    dl.innerHTML = '';
+    (items||[]).forEach(v => {
+      const o = document.createElement('option'); o.value = v; dl.appendChild(o);
+    });
+    return dl;
+  }
+  datalist('dl-headers', HEADER_SUGGEST);
+
+  function parseCols(raw){
+    const arr = String(raw||'').split('|').map(s=>s.trim()).filter(Boolean);
+    if(!arr.length) return '';
+    return (arr.length===1) ? arr[0] : arr;
+  }
+  function joinCols(v){ return Array.isArray(v) ? v.join(' | ') : (v ?? ''); }
+
+  /* ── Sources 섹션 ───────────────────────────────────────── */
+  const srcBox = document.createElement('div'); srcBox.className='section';
+  const srcHd  = document.createElement('div'); srcHd.textContent='Sources'; srcHd.style.fontWeight='700';
+  const srcHint= document.createElement('div'); srcHint.className='muted';
+  srcHint.textContent = "각 소스는 (alias, sheet, left_key(선택), right_key, cols)을 지정합니다. 'cols'는 여러 개면 | 로 구분하세요.";
+  srcBox.appendChild(srcHd); srcBox.appendChild(srcHint);
+
+  const srcList = document.createElement('div'); srcBox.appendChild(srcList);
+
+function sourceCard(init){
+  const card = document.createElement('div'); 
+  card.className='source-card';
+
+  // ---- inputs ----
+  const alias = document.createElement('input'); 
+  alias.type='text'; alias.placeholder='e.g., NFG / FG / WD / PBI';
+  alias.value = init?.alias || ''; alias.style.width='100%';
+
+  const sheet = document.createElement('input'); 
+  sheet.type='text'; sheet.placeholder='e.g., IntelOpsReportMainALL';
+  sheet.value = init?.sheet || ''; sheet.style.width='100%';
+
+  const lkey  = document.createElement('input'); 
+  lkey.type='text'; lkey.placeholder='Left key (raw column, optional)';
+  lkey.value = init?.left_key || ''; lkey.style.width='100%';
+  lkey.setAttribute('list','dl-headers');
+
+  const rkey  = document.createElement('input'); 
+  rkey.type='text'; rkey.placeholder='Right key (PBI column)';
+  rkey.value = init?.right_key || ''; rkey.style.width='100%';
+
+  const cols = document.createElement('input'); 
+  cols.type='text'; cols.style.width='100%';
+  cols.placeholder = "Columns to bring (여러 개면 | 로 구분)";
+  cols.value = joinCols(init?.cols);
+
+  // ---- render with labels (KV rows) ----
+  card.appendChild(kvRow('Alias', alias));
+  card.appendChild(kvRow('Sheet Name', sheet));
+  card.appendChild(kvRow('Left Key (optional)', lkey));
+  card.appendChild(kvRow('Right Key (PBI)', rkey));
+  card.appendChild(kvRow('Columns to Keep', cols));
+
+  // ---- Filter (optional) with labels ----
+  const fWrap = document.createElement('div'); 
+  fWrap.className='filter';
+  const fh = document.createElement('div'); 
+  fh.className='subhead'; fh.textContent='Filter (optional)';
+
+  const fcol = document.createElement('input'); 
+  fcol.type='text'; fcol.placeholder='Filter column';
+  fcol.value = init?.filter_col || ''; fcol.style.width='100%';
+  fcol.setAttribute('list','dl-headers');
+
+  const fop  = document.createElement('select');
+  FILTER_OPTS.forEach(o => { 
+    const opt=document.createElement('option'); opt.value=o; opt.textContent=o; 
+    fop.appendChild(opt); 
+  });
+  fop.value = (init?.filter_op && FILTER_OPTS.includes(init.filter_op)) ? init.filter_op : 'equals';
+
+  const fval = document.createElement('input'); 
+  fval.type='text'; fval.placeholder='Filter value';
+  fval.value = init?.filter_val || ''; fval.style.width='100%';
+
+  const fclear = document.createElement('button'); 
+  fclear.type='button'; fclear.textContent='Clear'; fclear.className='ghost';
+  fclear.onclick = () => { fcol.value=''; fval.value=''; };
+
+  fWrap.appendChild(fh);
+  fWrap.appendChild(kvRow('Filter Column', fcol));
+  fWrap.appendChild(kvRow('Filter Operator', fop));
+  fWrap.appendChild(kvRow('Filter Value', fval));
+
+  const fBtns = document.createElement('div'); 
+  fBtns.style.display='flex'; fBtns.style.justifyContent='flex-end';
+  fBtns.appendChild(fclear);
+  fWrap.appendChild(fBtns);
+
+  card.appendChild(fWrap);
+
+  // ---- Remove 버튼 (라벨 블록과 분리해 하단 우측 정렬) ----
+  const footer = document.createElement('div');
+  footer.style.display='flex'; footer.style.justifyContent='flex-end'; footer.style.marginTop='8px';
+  const rmBtn = document.createElement('button'); 
+  rmBtn.type='button'; rmBtn.textContent='Remove Source'; rmBtn.className='secondary';
+  rmBtn.onclick = () => card.remove();
+  footer.appendChild(rmBtn);
+  card.appendChild(footer);
+
+  return {
+    el: card,
+    get(){
+      const out = {
+        alias : alias.value.trim(),
+        sheet : sheet.value.trim(),
+        right_key: rkey.value.trim(),
+        cols  : parseCols(cols.value)
+      };
+      if (lkey.value.trim()) out.left_key = lkey.value.trim();
+      if (fcol.value.trim()){
+        out.filter_col = fcol.value.trim();
+        out.filter_op  = fop.value;
+        out.filter_val = fval.value;
+      }
+      return out;
+    }
+  };
+}
+
+
+  const srcApis = [];
+  (existing?.sources || []).forEach(s => {
+    const api = sourceCard(s); srcApis.push(api); srcList.appendChild(api.el);
+  });
+  if(!(existing?.sources||[]).length){
+    const api = sourceCard({ alias:'NFG' }); srcApis.push(api); srcList.appendChild(api.el);
+  }
+
+  const addSrc = document.createElement('button'); addSrc.type='button'; addSrc.textContent='+ Add Source'; addSrc.className='secondary';
+  addSrc.onclick = () => { const api = sourceCard({}); srcApis.push(api); srcList.appendChild(api.el); };
+  srcBox.appendChild(addSrc);
+  host.appendChild(srcBox);
+
+  /* ── Rename Map 섹션 ────────────────────────────────────── */
+  const mapBox = document.createElement('div'); mapBox.className='section';
+  const mapHd  = document.createElement('div'); mapHd.textContent='Rename Map (optional)'; mapHd.style.fontWeight='700';
+  const mapHint= document.createElement('div'); mapHint.className='muted';
+  mapHint.textContent = "예: NFG → Carrier (가져온 컬럼명을 최종 이름으로 변경)";
+  mapBox.appendChild(mapHd); mapBox.appendChild(mapHint);
+
+  const mapList = document.createElement('div'); mapBox.appendChild(mapList);
+function mapRow(init){
+  const line = document.createElement('div'); 
+  line.className='kv-inline';
+
+  // Old
+  const oldLabel = document.createElement('div'); 
+  oldLabel.className='muted'; oldLabel.textContent = 'Original Column';
+  const oldI = document.createElement('input'); 
+  oldI.type='text'; oldI.placeholder='e.g., NFG'; oldI.value = init?.old || ''; 
+  oldI.style.width='100%';
+
+  // New
+  const newLabel = document.createElement('div'); 
+  newLabel.className='muted'; newLabel.textContent = 'New Column';
+  const newI = document.createElement('input'); 
+  newI.type='text'; newI.placeholder='e.g., Carrier'; newI.value = init?.new || '';
+  newI.style.width='100%';
+
+  const rm = document.createElement('button'); 
+  rm.type='button'; rm.textContent='Remove'; rm.className='secondary';
+  rm.onclick = () => line.remove();
+
+  // grid: [label][input]
+  line.appendChild(oldLabel);
+  line.appendChild(oldI);
+  line.appendChild(newLabel);
+  line.appendChild(newI);
+
+  // 버튼은 아래 줄로 떨어지지 않게 우측 정렬 래퍼 추가
+  const actions = document.createElement('div');
+  actions.style.display='flex'; actions.style.justifyContent='flex-end'; actions.style.marginTop='6px';
+  actions.appendChild(rm);
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(line);
+  wrap.appendChild(actions);
+
+  return {
+    el: wrap,
+    get(){
+      const oldV = oldI.value.trim(), newV = newI.value.trim();
+      if (!oldV || !newV) return null;
+      return { old: oldV, new: newV };
+    }
+  };
+}
+
+
+  const maps = [];
+  let existingMaps = [];
+  if (existing?.rename_map) {
+    if (Array.isArray(existing.rename_map)) existingMaps = existing.rename_map;
+    else existingMaps = Object.entries(existing.rename_map).map(([old,newV]) => ({old, new:newV}));
+  }
+  existingMaps.forEach(m => { const api = mapRow(m); maps.push(api); mapList.appendChild(api.el); });
+  if (!existingMaps.length) { const api = mapRow({old:'NFG', new:'Carrier'}); maps.push(api); mapList.appendChild(api.el); }
+
+  const addMap = document.createElement('button'); addMap.type='button'; addMap.textContent='+ Add Mapping'; addMap.className='secondary';
+  addMap.onclick = () => { const api = mapRow({}); maps.push(api); mapList.appendChild(api.el); };
+  mapBox.appendChild(addMap);
+  host.appendChild(mapBox);
+
+  // ▶ 반환: 기존 키는 보존하면서 sources/rename_map만 갱신
+  return {
+    getValue(){
+      const cfg = {};
+      // 기존 conditions의 알 수 있는 키는 보존 (main_hawb_column, debug_merge 등)
+      if (existing && typeof existing === 'object') {
+        Object.keys(existing).forEach(k => { cfg[k] = existing[k]; });
+      }
+      // 우리가 편집하는 항목 갱신
+      const sources = srcApis.map(s => s.get()).filter(s => s.sheet && s.right_key && s.cols);
+      cfg.sources = sources;
+
+      const r = maps.map(m => m.get()).filter(Boolean);
+      if (r.length) cfg.rename_map = r; else delete cfg.rename_map;
+
+      // post_rules는 사용하지 않으므로 제거
+      delete cfg.post_rules;
+      return cfg;
+    }
+  };
+}
+
+
+
+/* 범용 conditions 폼(파일 전체 JSON 아님, 필드 단위만) */
+function buildGenericConditionsEditor(existing){
+  const host = clearHost();
+  const box = document.createElement('div'); box.className='section';
+  const title = document.createElement('div'); title.textContent='Conditions'; title.style.fontWeight='700';
+  box.appendChild(title);
+
+  const editors = []; // [{key, get:()=>any}]
+
+  function addField(key, val){
+    // 기본 타입별 에디터
+    if(typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean' || val == null){
+      let input, getter;
+      if(typeof val === 'boolean'){
+        input = boolInput(val);
+        box.appendChild(kvRow(key, input));
+        getter = () => !!input.checked;
+      }else if(typeof val === 'number'){
+        input = numInput(val);
+        box.appendChild(kvRow(key, input));
+        getter = () => Number(input.value);
+      }else{ // string or null
+        input = textInput(val ?? '', 'text');
+        box.appendChild(kvRow(key, input));
+        getter = () => input.value;
+      }
+      editors.push({key, get:getter});
+      return;
+    }
+    // 배열 처리: 원시 배열 ↔ 객체 배열 구분
+    if (Array.isArray(val)) {
+      const hasObject = val.some(v => typeof v === 'object' && v !== null);
+      if (hasObject) {
+        // 객체 배열 ⇒ JSON textarea (pretty)
+        const t = smallJsonArea(val);
+        box.appendChild(kvRow(key, t));
+        editors.push({
+          key,
+          get: () => { try { return JSON.parse(t.value || '[]'); } catch { return val; } }
+        });
+      } else {
+        // 원시 배열 ⇒ 줄바꿈 텍스트
+        const t = textareaLines(val);
+        box.appendChild(kvRow(key, t));
+        editors.push({
+          key,
+          get: () => t.value.split('\n').map(s => s.trim()).filter(Boolean)
+        });
+      }
+      return;
+    }
+
+    // 객체(얕은) → 섹션으로 풀기, 너무 복잡하면 개별 JSON
+    if(typeof val === 'object'){
+      const sec = document.createElement('div'); sec.className='section';
+      const hd  = document.createElement('div'); hd.innerHTML = `<strong>${key}</strong> <span class="muted">(object)</span>`;
+      sec.appendChild(hd);
+
+      const keys = Object.keys(val||{});
+      const difficult = keys.some(k => {
+        const v = val[k];
+        return typeof v === 'object' && v !== null && !Array.isArray(v);
+      });
+      if(difficult){
+        const t = smallJsonArea(val);
+        sec.appendChild(t);
+        editors.push({key, get:()=> {
+          try{ return JSON.parse(t.value || '{}'); }catch{ return val; }
+        }});
+      }else{
+        const inner = [];
+        keys.forEach(k=>{
+          const v = val[k];
+          let ctrl, getter;
+          if(typeof v === 'boolean'){
+            ctrl = boolInput(v); sec.appendChild(kvRow(k, ctrl)); getter = ()=>!!ctrl.checked;
+          }else if(typeof v === 'number'){
+            ctrl = numInput(v); sec.appendChild(kvRow(k, ctrl)); getter = ()=>Number(ctrl.value);
+          }else if(Array.isArray(v)){
+          const hasObject = v.some(x => typeof x === 'object' && x !== null);
+          if (hasObject) {
+            ctrl = smallJsonArea(v); sec.appendChild(kvRow(k, ctrl));
+            getter = () => { try { return JSON.parse(ctrl.value || '[]'); } catch { return v; } };
+          } else {
+            ctrl = textareaLines(v); sec.appendChild(kvRow(k, ctrl));
+            getter = () => ctrl.value.split('\n').map(s => s.trim()).filter(Boolean);
+          }
+        }
+else{
+            ctrl = textInput(v ?? '', 'text'); sec.appendChild(kvRow(k, ctrl)); getter = ()=>ctrl.value;
+          }
+          inner.push({k, get:getter});
+        });
+        editors.push({key, get:()=> {
+          const o={}; inner.forEach(it => o[it.k]=it.get()); return o;
+        }});
+      }
+      box.appendChild(sec);
+      return;
+    }
+    // 미지의 타입 → JSON 필드
+    const t = smallJsonArea(val);
+    box.appendChild(kvRow(key, t));
+    editors.push({key, get:()=> { try{return JSON.parse(t.value||'null')}catch{return val} }});
+  }
+
+  const cond = existing ?? {};
+  Object.keys(cond).forEach(k => addField(k, cond[k]));
+  if(Object.keys(cond).length === 0){
+    // 빈 conditions일 때 기본 힌트 제공
+    const hint = document.createElement('div');
+    hint.className='muted';
+    hint.style.marginTop='6px';
+    hint.textContent = 'Empty conditions. Add in your JSON step first or contact admin to provide a schema.';
+    box.appendChild(hint);
+  }
+
+  host.appendChild(box);
+  return {
+    getValue(){
+      const out={}; editors.forEach(e => out[e.key]=e.get()); return out;
+    }
+  };
+}
+
+async function openFormEditor(idx){
+  const c = $('#country').value;
+  const f = rows[idx].file;
+
+  $('#modalTitle').textContent = f;
+  $('#modalSubtitle').textContent = rows[idx].step || '';
+  $('#modalBg').style.display = 'flex';
+  document.body.classList.add('modal-open');          // (선택) 배경 스크롤 잠금
+
+  // 초기화 및 즉시 중앙 정렬
+  const dragCtl = window.__modalDragCtl || (window.__modalDragCtl = initModalDrag());
+  // 콘텐츠가 비동기로 채워지므로 두 번 보정
+  dragCtl.center();
+
+  try{
+    const obj = await fetchJson(`/pipelines/get?country=${encodeURIComponent(c)}&file=${encodeURIComponent(f)}`);
+    const step = obj.step || rows[idx].step;
+    const existingConds = obj.conditions || {};
+
+  let api;
+  if (step === 'remarks_update') {
+    api = buildRemarksEditor(existingConds);
+  } else if (step === 'pbi_multi_merge') {
+    api = buildPbiMergeEditor(existingConds);
+  } else {
+    api = buildGenericConditionsEditor(existingConds);
+  }
+
+
+    // 콘텐츠 렌더 후 높이가 바뀌었을 수 있으므로 재중앙
+    setTimeout(() => dragCtl.center(), 0);
+
+    $('#saveForm').onclick = async ()=>{
+      const payload = { country:c, file:f, step, conditions: api.getValue() };
+      try{
+        await fetchJson('/pipelines/update', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        alert('Updated');
+        $('#modalBg').style.display='none';
+        document.body.classList.remove('modal-open');
+        await loadList();
+      }catch(e){ alert('Update failed: ' + e.message); }
+    };
+  }catch(e){
+    console.error('openFormEditor:', e);
+    const host = $('#formHost');
+    host.innerHTML = `<div class="chip"><span class="danger">Load failed:</span> ${String(e.message||e)}</div>`;
+    // 에러 메시지 렌더 후도 중앙 보정
+    setTimeout(() => (window.__modalDragCtl?.center?.()), 0);
+  }
+}
+
+
+$('#closeModal').onclick = ()=>{
+  $('#modalBg').style.display='none';
+  document.body.classList.remove('modal-open');
+};
+
+
+/* Save Order */
+$('#saveOrder').onclick = async ()=>{
+  const c = $('#country').value;
+  const items = rows.map((r, i) => ({
+    file: r.file,
+    order: (r.order===null || r.order==='' || Number.isNaN(r.order)) ? (i+1) : Number(r.order)
+  }));
+  try{
+    await fetchJson('/pipelines/reorder', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ country:c, items })
+    });
+    alert('Order saved'); await loadList();
+  }catch(e){ alert('Save failed: ' + e.message); }
+};
+$('#renumber').onclick = ()=>{ rows.forEach((r,i)=> r.order=i+1); renderList(); };
+
+/* Init */
+(async function init(){
+  await loadCountries();
+  $('#country').addEventListener('change', loadList);
+  $('#reload').addEventListener('click', loadList);
+  if($('#country').options.length) await loadList();
+})();
+
+function enableModalVerticalDrag(){
+  const bg = document.getElementById('modalBg');
+  const modal = bg.querySelector('.modal');
+  const header = modal.querySelector('header');
+
+  let dragging=false, startY=0, startTop=0;
+
+  function clampTop(t){
+    const maxTop = window.innerHeight - modal.offsetHeight - 8;
+    return Math.min(Math.max(8, t), Math.max(8, maxTop));
+  }
+  function centerModal(){
+    // 내용이 렌더된 뒤에 호출해야 정확
+    modal.style.left = '50%';
+    modal.style.transform = 'translateX(-50%)';
+    modal.style.top = clampTop((window.innerHeight - modal.offsetHeight)/2) + 'px';
+  }
+
+  function onDown(e){
+    // 버튼 클릭은 드래그로 취급하지 않음
+    if (e.target.closest('button')) return;
+    const pointY = (e.touches && e.touches[0]?.clientY) || e.clientY;
+    dragging = true;
+    startY = pointY;
+    startTop = modal.getBoundingClientRect().top;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+  }
+  function onMove(e){
+    if(!dragging) return;
+    const pointY = (e.touches && e.touches[0]?.clientY) || e.clientY;
+    if (e.cancelable) e.preventDefault(); // 스크롤 대신 드래그
+    const dy = pointY - startY;
+    modal.style.top = clampTop(startTop + dy) + 'px';
+  }
+  function onUp(){
+    dragging=false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+
+  header.addEventListener('mousedown', onDown);
+  header.addEventListener('touchstart', onDown, {passive:false});
+
+  // 외부에서 열 때 중앙 정렬하고 시작
+  return { centerModal };
+}
+
+</script>
+</body>
+</html>
