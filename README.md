@@ -1,7 +1,7 @@
 # Intel_A2A_automated_system<br>
 
 A copy of the original reposity that was set to private<br>
-In this project we built an end-to-end system that handles brokers' shipment files from DHL, which originates from 4 countries Vietnam, China, Coasta Rica and<br> Malaysia. The project allows and assists the user to:<br>
+In this project we built an end-to-end system that handles brokers' shipment files from DHL, which originates from 4 countries Vietnam, China, Coasta Rica and Malaysia.<br> The project allows and assists the user to:<br>
 -Upload brokers files and Intel's shipment report<br>
 -Create custom rules for future use<br>
 -Pre-process each broker file based on instructed rules<br>
